@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block public_content %}
+<style>
+.hero-section {
+    position: relative;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 60px 20px;
+}
+
+.bg-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.bg-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    animation: slideAnimation 15s infinite;
+}
+
+.bg-slide:nth-child(1) {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.349)), url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200');
+    animation-delay: 0s;
+}
+
+.bg-slide:nth-child(2) {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.349)), url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200');
+    animation-delay: 5s;
+}
+
+.bg-slide:nth-child(3) {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.349)), url('https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=1200');
+    animation-delay: 10s;
+}
+
+@keyframes slideAnimation {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.hero-content { position: relative; z-index: 1; }
+
+.search-box {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    border-radius: 1rem !important;
+}
+
+.section-title {
+    position: relative;
+    display: inline-block;
+    padding-bottom: 0.5rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.feature-icon {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), #8b85ff);
+    color: white;
+    margin: 0 auto 1rem;
+}
+</style>
+
+<div class="hero-section">
+    <div class="bg-slider">
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+        <div class="bg-slide"></div>
+    </div>
+    
+    <div class="hero-content text-center">
+        <h1 class="display-4 mb-4 fw-bold text-white">Find Essential Services Near You</h1>
+        <p class="lead mb-5 text-white">Connect with local stores, services, and businesses in your neighborhood</p>
+        
+        <div class="search-box bg-white p-4 rounded shadow mx-auto" style="max-width: 800px;">
+            <form action="{{ url_for('search') }}" method="GET" class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <input type="text" class="form-control" name="area_name" placeholder="Area Name">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" inputmode="numeric" pattern="[1-9][0-9]{5}" class="form-control" name="pincode" placeholder="Pincode">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-1"></i> Search
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-3 text-center">
+                <button class="btn btn-outline-primary btn-sm" onclick="getCurrentLocation()">
+                    <i class="fas fa-location-arrow me-1"></i> Use My Location
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="categories-section my-5">
+    <h2 class="text-center mb-4 fw-bold"><span class="section-title">Browse Categories</span></h2>
+    <div class="row g-3">
+        {% for cat in categories %}
+        <div class="col-md-3 col-sm-4 col-6">
+            <a href="{{ url_for('search', category=cat) }}" class="category-card text-decoration-none">
+                <div class="card h-100 text-center py-4">
+                    <i class="fas fa-store fa-2x mb-2 text-primary"></i>
+                    <h6 class="mb-0">{{ cat }}</h6>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="features-section my-5 py-5">
+    <div class="container">
+        <h2 class="text-center mb-5 fw-bold"><span class="section-title">Why Use AreaAssist?</span></h2>
+        <div class="row g-4">
+            <div class="col-md-4 text-center">
+                <div class="feature-icon">
+                    <i class="fas fa-search-location fa-2x"></i>
+                </div>
+                <h5>Easy Search</h5>
+                <p class="text-muted">Find services by location, category, or pincode</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="feature-icon" style="background: linear-gradient(135deg, #71dd37, #55e64d);">
+                    <i class="fas fa-check-circle fa-2x"></i>
+                </div>
+                <h5>Verified Listings</h5>
+                <p class="text-muted">All services are verified by our team</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="feature-icon" style="background: linear-gradient(135deg, #ffab00, #ffc107);">
+                    <i class="fas fa-star fa-2x"></i>
+                </div>
+                <h5>Reviews & Ratings</h5>
+                <p class="text-muted">Make informed decisions with reviews</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cta-section my-5 text-center py-5" style="background: linear-gradient(135deg, var(--primary-color), #8b85ff); border-radius: 1rem;">
+    <div class="container">
+        <h3 class="fw-bold text-white">Are you a Service Provider?</h3>
+        <p class="lead text-white-50 mb-4">List your business and reach more customers</p>
+        {% if not session.get('user_id') %}
+            <a href="{{ url_for('register') }}?role=provider" class="btn btn-light btn-lg px-4">
+                <i class="fas fa-plus me-2"></i>Register Your Business
+            </a>
+        {% else %}
+            <a href="{{ url_for('register_service') }}" class="btn btn-light btn-lg px-4">
+                <i class="fas fa-plus me-2"></i>Add Your Service
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

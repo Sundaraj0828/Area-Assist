@@ -1,0 +1,78 @@
+/* AreaAssist Component Styles */
+
+/* Card Styles */
+.card {
+    border: none;
+    border-radius: var(--card-border-radius);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Timings Card - Light Mode */
+.timings-card {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.timings-card h5,
+.timings-card p {
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.card-header {
+    background: white;
+    border-bottom: 1px solid #f0f0f0;
+    font-weight: 600;
+}
+
+/* Fixed Theme Toggle Button - Right Side Middle */
+.fixed-theme-toggle {
+    position: fixed;
+    right: 0;
+    top: 80%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    cursor: pointer;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% 0 0 50%;
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.fixed-theme-toggle:hover {
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .fixed-theme-toggle {
+    background: #4a5568;
+}
+
+/* Category List Hover Effects */
+.category-list .category-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: transparent;
+}
+
+.category-list .category-item:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    transform: translateX(5px);
+}
+
+[data-theme="dark"] .category-list .category-item:hover {
+    background-color: rgba(13, 110, 253, 0.2);
+}
+
+.category-list .category-item:active {
+    transform: translateX(2px);
+    background-color: rgba(13, 110, 253, 0.2);
+}

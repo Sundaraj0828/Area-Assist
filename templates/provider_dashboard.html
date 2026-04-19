@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if not is_active %}
+<div class="alert alert-warning alert-inactive mb-2" role="alert">
+    <i class="fas fa-exclamation-triangle"></i> <strong>Account Inactive:</strong> Your account is currently inactive. Customers cannot see your services or make bookings. Please contact the administrator to activate your account.
+</div>
+{% endif %}
+<div class="p-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-store"></i> Provider Dashboard</h2>
+        {% if user.area_name %}<span class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ user.area_name|upper }} {% if user.pincode %}({{ user.pincode }}){% endif %}</span>{% endif %}
+    </div>
+    <!-- <a href="{{ url_for('register_service') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Service
+    </a> -->
+</div>
+
+
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-eye fa-2x mb-2"></i>
+                <h3>{{ total_views }}</h3>
+                <p class="mb-0">Total Views</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-phone fa-2x mb-2"></i>
+                <h3>{{ total_calls }}</h3>
+                <p class="mb-0">Total Calls</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h3>{{ bookings|length }}</h3>
+                <p class="mb-0">Bookings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h3>{{ happy_customers }}</h3>
+                <p class="mb-0">Happy Customers</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    
+     
+    <div class="col-md-8">
+        {% if bookings %}
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> All Bookings</h5>
+            </div>
+            <div class="card-body">
+                {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Time</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                {% if booking.status == 'pending' %}
+                                <tr>
+                                    <td>
+                                        <h6>{{ booking.customer_name | title }}<br>
+                                            <span class="badge bg-primary">{{ booking.customer_phone }}</span>
+                                        </h6>
+                                    </td>
+                                    
+                                    <td>{{ booking.date }} <br> <span class="badge bg-secondary">{{ booking.time|time_12h }}</span></td>
+                                    <td>{{ booking.notes|default('N/A')|capitalize }}</td>
+                                    <td>
+                                        <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning{% elif booking.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">{{ booking.status|capitalize }}</span>
+                                    </td>
+                                    <td>
+                                        {% if booking.status == 'pending' %}
+                                        <form method="POST" action="{{ url_for('update_booking_status') }}" style="display:inline;">
+                                            <input type="hidden" name="booking_id" value="{{ booking._id }}">
+                                            <input type="hidden" name="status" value="confirmed">
+                                            <button type="submit" class="btn btn-sm btn-success" title="Confirm">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('update_booking_status') }}" style="display:inline;">
+                                            <input type="hidden" name="booking_id" value="{{ booking._id }}">
+                                            <input type="hidden" name="status" value="cancelled">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Cancel">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No bookings yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+         <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-list"></i> All Requested Services</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if services %}
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover table-sm mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for service in services %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ service.name | upper }}</strong><br>
+                                        <small class="text-muted">{{ service.area_name|default('') }}</small>
+                                    </td>
+                                    <td><span class="badge bg-dark">{{ service.category }}</span></td>
+                                    <td>
+                                        {% if service.status == 'approved' %}
+                                        <span class="badge bg-success">Approved</span>
+                                        {% elif service.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">Pending</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-sm btn-primary" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_service', service_id=service._id) }}" class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center p-3">No services registered yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+
+        
+    </div>
+    <div class="col-md-4">
+        
+         
+     
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-check-circle"></i> Approved Services</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if services %}
+                    {% for service in services %}
+                    {% if service.status == 'approved' %}
+                    <div class="card mb-3 border-success rounded">
+                        <div class="card-body py-3 rounded-top border">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="mb-2"><strong>{{ service.name | upper }}</strong></h5>
+                                <span class="badge bg-light text-success">Approved</span>
+                            </div>
+                            
+                            {% if service.area_name %}
+                            <p>
+                                <small><i>{{ service.address | title }}</i></small>
+                            </p>
+                            {% endif %}
+                            <span class="badge bg-dark">{{ service.category }}</span>
+                            
+                        </div>
+                        <div class="card-footer bg-dark-subtle">
+                            <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-sm btn-success">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">No approved services yet.</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                 <a href="{{ url_for('services_catalogue') }}" class="btn btn-sm btn-success">
+                    <i class="fas fa-eye"></i> View All Services
+                </a>
+            </div>
+        </div>
+         
+    </div>
+    
+    
+</div>
+</div>
+
+<!-- All Bookings Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        
+    </div>
+</div>
+
+
+<div class="row g-4 mt-3">
+    <div class="col-12">
+        <div class="card shadow" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div class="card-body text-center py-4">
+                <h4 class="mb-2"><i class="fas fa-store"></i> Register Your Service</h4>
+                <p class="mb-3">Start reaching more customers by listing your services on our platform</p>
+                <a href="{{ url_for('register_service') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus"></i> Add Your First Service
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

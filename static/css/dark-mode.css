@@ -1,0 +1,436 @@
+/* AreaAssist Dark Mode Styles */
+
+/* Dark Mode Base */
+[data-theme="dark"] {
+    --body-bg: #1a1c23;
+    --card-bg: #23252f;
+    --text-color: #ffffff;
+}
+
+[data-theme="dark"] body {
+    background-color: var(--body-bg);
+}
+
+[data-theme="dark"] h1, 
+[data-theme="dark"] h2, 
+[data-theme="dark"] h3, 
+[data-theme="dark"] h4, 
+[data-theme="dark"] h5, 
+[data-theme="dark"] h6,
+[data-theme="dark"] p, 
+[data-theme="dark"] span, 
+[data-theme="dark"] label {
+    color: var(--text-color) !important;
+}
+
+/* Dark Mode - Card */
+[data-theme="dark"] .card {
+    background-color: var(--card-bg);
+}
+
+/* Dark Mode - Timings Card */
+[data-theme="dark"] .timings-card {
+    background-color: #3a3f4b;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+[data-theme="dark"] .timings-card h5,
+[data-theme="dark"] .timings-card p {
+    color: #ffffff !important;
+    margin-bottom: 5px;
+}
+
+[data-theme="dark"] .card-header {
+    background: var(--card-bg);
+    border-bottom: 1px solid #4a5568;
+}
+
+/* Dark Mode - Header */
+[data-theme="dark"] .top-header {
+    background: var(--card-bg);
+}
+
+/* Dark Mode - User Profile */
+[data-theme="dark"] .user-profile {
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .user-profile:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .user-name {
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .user-role {
+    color: #a0aec0;
+}
+
+/* Dark Mode - Dropdown */
+[data-theme="dark"] .dropdown-menu {
+    background-color: var(--card-bg);
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .dropdown-item {
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Modal */
+[data-theme="dark"] .modal-content {
+    background-color: #2d3748 !important;
+    color: #f5f7fb !important;
+    border: 1px solid #4a5568;
+}
+
+[data-theme="dark"] .modal-body {
+    background-color: #2d3748 !important;
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .modal-footer {
+    background-color: #2d3748 !important;
+    border-top: 1px solid #4a5568;
+}
+
+[data-theme="dark"] .modal-body p {
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .modal-body .text-muted {
+    color: #a0aec0 !important;
+}
+
+/* Dark Mode - Tables */
+[data-theme="dark"] .table {
+    color: #f5f7fb !important;
+    background-color: transparent;
+}
+
+[data-theme="dark"] .table thead th,
+[data-theme="dark"] .table tbody td {
+    border-color: #4a5568 !important;
+    color: #f5f7fb !important;
+    background-color: transparent;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) {
+    background-color: rgba(255,255,255,0.05);
+}
+
+/* Dark Mode - Table text within cards */
+[data-theme="dark"] .card-body .table td,
+[data-theme="dark"] .card-body .table th {
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .table > thead > tr > th,
+[data-theme="dark"] .table > tbody > tr > th,
+[data-theme="dark"] .table > tfoot > tr > th,
+[data-theme="dark"] .table > thead > tr > td,
+[data-theme="dark"] .table > tbody > tr > td,
+[data-theme="dark"] .table > tfoot > tr > td {
+    color: #f5f7fb !important;
+}
+
+/* Dark Mode - Forms */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #f5f7fb;
+}
+
+/* Fix select dropdown arrow visibility in dark mode */
+[data-theme="dark"] .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23f5f7fb' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    padding-right: 2.5rem;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: #a0aec0 !important;
+    opacity: 1;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background-color: #2d3748;
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .form-label {
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Card Body text */
+[data-theme="dark"] .card-body {
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Input Group */
+[data-theme="dark"] .input-group-text {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #a0aec0;
+}
+
+[data-theme="dark"] .input-group-text i {
+    color: #a0aec0 !important;
+}
+
+/* Dark Mode - Form Check */
+[data-theme="dark"] .form-check-label {
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .form-check-input {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+[data-theme="dark"] .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Dark Mode - All input types */
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="time"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="text"] {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #f5f7fb;
+    color-scheme: dark;
+}
+
+/* Dark Mode - Alerts */
+[data-theme="dark"] .alert-success {
+    background-color: rgba(72, 187, 120, 0.2);
+    border-color: #48bb78;
+    color: #9ae6b4;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(245, 101, 101, 0.2);
+    border-color: #f56565;
+    color: #feb2b2;
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(236, 201, 75, 0.2);
+    border-color: #ecc94b;
+    color: #faf089;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(66, 153, 225, 0.2);
+    border-color: #4299e1;
+    color: #90cdf4;
+}
+
+[data-theme="dark"] .alert-primary {
+    background-color: rgba(66, 153, 225, 0.2);
+    border-color: #4299e1;
+    color: #90cdf4;
+}
+
+/* Dark Mode - Badges */
+[data-theme="dark"] .badge {
+    color: #ffffff;
+}
+
+/* Dark Mode - Text utilities */
+[data-theme="dark"] .text-muted {
+    color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .text-dark {
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .text-secondary {
+    color: #a0aec0 !important;
+}
+
+/* Dark Mode - Card text */
+[data-theme="dark"] .card-title,
+[data-theme="dark"] .card-text {
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Search box */
+[data-theme="dark"] input[type="search"] {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Pagination */
+[data-theme="dark"] .page-link {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .page-link:hover {
+    background-color: #4a5568;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+    background-color: #4299e1;
+    border-color: #4299e1;
+}
+
+[data-theme="dark"] .pagination {
+    color: #f5f7fb;
+}
+
+/* Dark Mode - Card Headers */
+[data-theme="dark"] .card-header.bg-primary {
+    background-color: #2c5282 !important;
+}
+
+[data-theme="dark"] .card-header.bg-success {
+    background-color: #276749 !important;
+}
+
+[data-theme="dark"] .card-header.bg-info {
+    background-color: #2b6cb0 !important;
+}
+
+[data-theme="dark"] .card-header.bg-warning {
+    background-color: #b7791f !important;
+    color: #fff;
+}
+
+[data-theme="dark"] .card-header.bg-danger {
+    background-color: #c53030 !important;
+}
+
+[data-theme="dark"] .card-header.bg-primary {
+    background-color: #3182ce !important;
+}
+
+/* Dark Mode - Service Card Specific */
+[data-theme="dark"] .service-card {
+    background-color: var(--card-bg);
+    border: 1px solid #4a5568;
+}
+
+[data-theme="dark"] .service-card .card-title {
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .service-card .card-text {
+    color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .service-card .text-muted {
+    color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .service-card .small {
+    color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .stat-box {
+    background-color: #2d3748;
+}
+
+[data-theme="dark"] .stat-box i {
+    color: #90cdf4 !important;
+}
+
+[data-theme="dark"] .stat-box .text-muted {
+    color: #a0aec0 !important;
+}
+
+[data-theme="dark"] .stat-box .fw-bold {
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .badge.bg-light {
+    background-color: #4a5568 !important;
+    color: #f5f7fb !important;
+}
+
+[data-theme="dark"] .badge.bg-warning {
+    color: #1a202c !important;
+}
+
+/* Dark Mode - Button fixes */
+[data-theme="dark"] .btn-outline-primary {
+    color: #90cdf4;
+    border-color: #4299e1;
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: #4299e1;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .btn-outline-success {
+    color: #68d391;
+    border-color: #48bb78;
+}
+
+[data-theme="dark"] .btn-outline-success:hover {
+    background-color: #48bb78;
+    color: #ffffff;
+}
+
+[data-theme="dark"] .btn-outline-warning {
+    color: #f6e05e;
+    border-color: #ecc94b;
+}
+
+[data-theme="dark"] .btn-outline-warning:hover {
+    background-color: #ecc94b;
+    color: #1a202c;
+}
+
+[data-theme="dark"] .btn-outline-danger {
+    color: #fc8181;
+    border-color: #f56565;
+}
+
+[data-theme="dark"] .btn-outline-danger:hover {
+    background-color: #f56565;
+    color: #ffffff;
+}
+
+/* Dark Mode - Service Image Placeholder */
+[data-theme="dark"] .service-img-placeholder {
+    background-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .service-img-placeholder i {
+    color: #718096 !important;
+}
+
+/* Dark Mode - Modal header */
+[data-theme="dark"] .modal-header {
+    background-color: #2d3748;
+    border-bottom: 1px solid #4a5568;
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .modal-title {
+    color: #f5f7fb;
+}
+
+[data-theme="dark"] .btn-close {
+    filter: invert(1);
+}

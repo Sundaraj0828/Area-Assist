@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-catalog"></i> Services Catalogue</h2>
+    <a href="{{ url_for('register_service') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add New Service
+    </a>
+</div>
+
+<!-- Filter and Search -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" id="searchService" class="form-control" placeholder="Search services...">
+            </div>
+            <div class="col-md-3">
+                <select id="filterCategory" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.name }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="filterStatus" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="approved">Approved</option>
+                    <option value="pending">Pending</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" onclick="filterServices()">
+                    <i class="fas fa-filter"></i> Filter
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Services Grid -->
+<div class="row g-4" id="servicesGrid">
+    {% if services %}
+        {% for service in services %}
+        <div class="col-md-6 col-lg-6 service-item" 
+             data-category="{{ service.category }}" 
+             data-status="{{ service.status }}"
+             data-name="{{ service.name|lower }}">
+            <div class="card shadow h-100 service-card">
+                <!-- Image Slider -->
+                <div class="service-img-container">
+                    {% if service.image %}
+                    <img src="{{ service.image }}" class="card-img-top service-img service-slider-img" alt="{{ service.name }}" data-service-id="{{ service._id }}">
+                    {% elif service.photos and service.photos|length > 0 %}
+                    <img src="{{ service.photos[0] }}" class="card-img-top service-img service-slider-img" alt="{{ service.name }}" data-service-id="{{ service._id }}">
+                    {% else %}
+                    <div class="card-img-top service-img-placeholder d-flex align-items-center justify-content-center">
+                        <i class="fas fa-image fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Image Navigation Arrows -->
+                    {% if service.photos and service.photos|length > 1 %}
+                    <button class="slider-prev" onclick="event.stopPropagation(); changeServiceImage('{{ service._id }}', 'prev')">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="slider-next" onclick="event.stopPropagation(); changeServiceImage('{{ service._id }}', 'next')">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <div class="slider-indicator" id="indicator-{{ service._id }}">
+                        1/{{ service.photos|length + (1 if service.image else 0) }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ service.name |upper }}</h5>
+                        {% if service.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                        {% elif service.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% else %}
+                            <span class="badge bg-danger">Rejected</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted small mb-2">
+                        <i class="fas fa-tag"></i> {{ service.category }}
+                    </p>
+                    <p class="card-text small">{{ service.description[:100] }}{% if service.description|length > 100 %}...{% endif %}</p>
+                    
+                    <div class="row text-center mt-3">
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <i class="fas fa-eye text-primary"></i>
+                                <span class="d-block fw-bold">{{ service.views|default(0) }}</span>
+                                <small class="text-muted">Views</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <i class="fas fa-phone text-success"></i>
+                                <span class="d-block fw-bold">{{ service.calls|default(0) }}</span>
+                                <small class="text-muted">Calls</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <i class="fas fa-star text-warning"></i>
+                                <span class="d-block fw-bold">{{ service.avg_rating|default('N/A') }}</span>
+                                <small class="text-muted">Rating</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent text-end">
+                    <div class="">
+                        <a href="{{ url_for('service_detail', service_id=service._id) }}" 
+                           class="btn btn-primary btn-sm ">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <a href="{{ url_for('edit_service', service_id=service._id) }}" 
+                           class="btn btn-warning btn-sm">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        {% if service.status == 'approved' %}
+                        <form method="POST" action="{{ url_for('clone_service', service_id=service._id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Are you sure you want to clone this service?');">
+                                <i class="fas fa-copy"></i> Clone
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle"></i> No services registered yet. 
+            <a href="{{ url_for('register_service') }}">Add your first service</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Summary Cards -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Services Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h3 class="text-primary">{{ services|length }}</h3>
+                        <p class="mb-0">Total Services</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-success">{{ services|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+                        <p class="mb-0">Active Services</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-warning">{{ services|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                        <p class="mb-0">Pending Services</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h3 class="text-danger">{{ services|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
+                        <p class="mb-0">Rejected Services</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<style>
+.service-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.service-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+.service-img {
+    height: 150px;
+    object-fit: cover;
+}
+.service-img-placeholder {
+    height: 150px;
+    background-color: #f8f9fa;
+}
+.stat-box {
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+.stat-box i {
+    font-size: 1.2rem;
+}
+
+/* Image Slider Styles */
+.service-img-container {
+    position: relative;
+    overflow: hidden;
+}
+.service-slider-img {
+    transition: opacity 0.3s ease;
+}
+.slider-prev, .slider-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s, background 0.3s;
+    z-index: 10;
+}
+.service-img-container:hover .slider-prev,
+.service-img-container:hover .slider-next {
+    opacity: 1;
+}
+.slider-prev:hover, .slider-next:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+.slider-prev {
+    left: 8px;
+}
+.slider-next {
+    right: 8px;
+}
+.slider-indicator {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+/* Dark mode slider */
+[data-theme="dark"] .slider-prev,
+[data-theme="dark"] .slider-next {
+    background: rgba(255, 255, 255, 0.2);
+}
+[data-theme="dark"] .slider-prev:hover,
+[data-theme="dark"] .slider-next:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+</style>
+
+<script>
+// Service image slider data - stores images for each service
+const serviceImages = {};
+
+// Initialize service images data from Jinja template
+{% if services %}
+{% for service in services %}
+serviceImages['{{ service._id }}'] = [];
+{% if service.image %}
+serviceImages['{{ service._id }}'].push('{{ service.image }}');
+{% endif %}
+{% if service.photos %}
+{% for photo in service.photos %}
+serviceImages['{{ service._id }}'].push('{{ photo }}');
+{% endfor %}
+{% endif %}
+serviceImages['{{ service._id }}'].currentIndex = 0;
+{% endfor %}
+{% endif %}
+
+function changeServiceImage(serviceId, direction) {
+    const images = serviceImages[serviceId];
+    if (!images || images.length <= 1) return;
+    
+    // Update index
+    if (direction === 'prev') {
+        images.currentIndex = (images.currentIndex - 1 + images.length) % images.length;
+    } else {
+        images.currentIndex = (images.currentIndex + 1) % images.length;
+    }
+    
+    // Update image
+    const imgElement = document.querySelector(`img[data-service-id="${serviceId}"]`);
+    if (imgElement) {
+        imgElement.style.opacity = '0.5';
+        setTimeout(() => {
+            imgElement.src = images[images.currentIndex];
+            imgElement.style.opacity = '1';
+        }, 150);
+    }
+    
+    // Update indicator
+    const indicator = document.getElementById(`indicator-${serviceId}`);
+    if (indicator) {
+        indicator.textContent = (images.currentIndex + 1) + '/' + images.length;
+    }
+}
+
+function filterServices() {
+    const search = document.getElementById('searchService').value.toLowerCase();
+    const category = document.getElementById('filterCategory').value;
+    const status = document.getElementById('filterStatus').value;
+    
+    const items = document.querySelectorAll('.service-item');
+    
+    items.forEach(item => {
+        const name = item.dataset.name;
+        const itemCategory = item.dataset.category;
+        const itemStatus = item.dataset.status;
+        
+        const matchesSearch = name.includes(search);
+        const matchesCategory = !category || itemCategory === category;
+        const matchesStatus = !status || itemStatus === status;
+        
+        if (matchesSearch && matchesCategory && matchesStatus) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function toggleServiceStatus(serviceId, action) {
+    fetch(`/provider/toggle_service/${serviceId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating service status');
+        }
+    });
+}
+
+// Real-time search
+document.getElementById('searchService').addEventListener('input', filterServices);
+</script>
+{% endblock %}

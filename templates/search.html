@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block public_content %}
+<h2 class="mb-4"><i class="fas fa-search"></i> {% if search_performed %}Search Results{% else %}Browse Services{% endif %}</h2>
+
+{% if not search_performed %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> Showing recent services. Use the search form below to find services in your area.
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <form action="{{ url_for('search') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="area_name" placeholder="Area Name (e.g., Malviya Nagar)" 
+                       value="{{ search_params.area_name }}">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" name="pincode" placeholder="Pincode" 
+                       value="{{ search_params.pincode }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if search_params.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="booking" value="1" id="bookingCheck" 
+                           {% if search_params.booking %}checked{% endif %}>
+                    <label class="form-check-label" for="bookingCheck">
+                        Online Booking
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-primary w-100" onclick="getCurrentLocation()" title="Search Near Me">
+                    <i class="fas fa-location-arrow"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if services %}
+    <div class="row g-3">
+        {% for service in services %}
+        
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">{{ service.name | upper }}</h5>
+                    <span class="badge bg-primary">{{ service.category }}</span>
+                    {% if service.avg_rating %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-star"></i> {{ service.avg_rating }}
+                        </span>
+                    {% endif %}
+                    {% if service.booking_available %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-calendar-check"></i> Book Now
+                        </span>
+                    {% endif %}
+                    {% if service.distance is not none and service.distance > 0 %}
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-map-marker-alt"></i> {{ (service.distance/1000)|round(1) }} km
+                        </span>
+                    {% endif %}
+                    <p class="card-text mt-2">
+                        {% if service.area_name %}
+                            <i class="fas fa-map-marker-alt"></i> {{ service.area_name  }}<br>
+                        {% endif %}
+                        <i class="fas fa-address-book"></i> {{ service.address }}<br>
+                        {% if service.pincode %}
+                            <i class="fas fa-envelope"></i> {{ service.pincode }}<br>
+                        {% endif %}
+                        {% if session %}
+                            <i class="fas fa-phone"></i> {{ service.phone }}<br>
+                        {% else %}
+                            <i class="fas fa-phone"></i> <span class="text-muted">Login to view phone</span><br>
+                        {% endif %}
+                        <!-- <i class="fas fa-clock"></i> {{ service.timings }} -->
+                    </p>
+                </div>
+                {% if session %}
+                <div class="card-footer bg-white">
+                    
+                    <button class="btn {% if service._id|string in user_saved_ids %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm save-btn" 
+                            onclick="toggleSaveService('{{ service._id }}', this)" 
+                            title="{% if service._id|string in user_saved_ids %}Unsave{% else %}Save{% endif %}">
+                        <i class="{% if service._id|string in user_saved_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                    </button>
+                    
+                    <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-outline-primary btn-sm">
+                        View Details
+                    </a>
+                    <a href="tel:{{ service.phone }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-phone"></i> Call
+                    </a>
+                    {% if service.whatsapp %}
+                        <a href="https://wa.me/{{ service.whatsapp }}" class="btn btn-success btn-sm">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    {% endif %}
+                </div>                
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle"></i> No services found. Try a different search or browse categories from the home page.
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-search"></i> {% if search_performed %}Search Results{% else %}Browse Services{% endif %}
+</h2>
+<small class="text-muted"><i>5 KMs from customer's location</i></small>
+{% if not search_performed %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> Showing recent services. Use the search form below to find services in your area.
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <form action="{{ url_for('search') }}" method="GET" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" name="area_name" placeholder="Area Name (e.g., Malviya Nagar)" 
+                       value="{{ search_params.area_name }}">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" name="pincode" placeholder="Pincode" 
+                       value="{{ search_params.pincode }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat }}" {% if search_params.category == cat %}selected{% endif %}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" name="booking" value="1" id="bookingCheck2" 
+                           {% if search_params.booking %}checked{% endif %}>
+                    <label class="form-check-label" for="bookingCheck2">
+                        Online Booking
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-primary w-100" onclick="getCurrentLocation()" title="Search Near Me">
+                    <i class="fas fa-location-arrow"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if services %}
+    
+    <div class="row g-3">
+        {% for service in services %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm ">
+                <div class="card-body">
+                    <h5 class="card-title">{{ service.name | upper }}</h5>
+                    <span class="badge bg-primary">{{ service.category }}</span>
+                    {% if service.avg_rating %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-star"></i> {{ service.avg_rating }}
+                        </span>
+                    {% endif %}
+                    {% if service.booking_available %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-calendar-check"></i> Book Now
+                        </span>
+                    {% endif %}
+                    {% if service.distance %}
+                        <span class="badge bg-info text-dark">
+                            <i class="fas fa-map-marker-alt"></i> {{ (service.distance/1000)|round(1) }} km
+                        </span>
+                    {% endif %}
+                    <p class="card-text mt-2">
+                        {% if service.area_name %}
+                            <i class="fas fa-map-marker-alt"></i> {{ service.area_name }}<br>
+                        {% endif %}
+                        <i class="fas fa-address-book"></i> {{ service.address }}<br>
+                        {% if service.pincode %}
+                            <i class="fas fa-envelope"></i> {{ service.pincode }}<br>
+                        {% endif %}
+                        {% if session %}
+                            <i class="fas fa-phone"></i> {{ service.phone }}<br>
+                        {% else %}
+                            <i class="fas fa-phone"></i> <span class="text-muted">Login to view phone</span><br>
+                        {% endif %}
+                        <!-- <i class="fas fa-clock"></i> {{ service.timings }} -->
+                    </p>
+                </div>
+                <div class="card-footer">
+                    {% if session %}
+                    <button class="btn {% if service._id|string in user_saved_ids %}btn-danger{% else %}btn-outline-danger{% endif %} btn-sm save-btn" 
+                            onclick="toggleSaveService('{{ service._id }}', this)" 
+                            title="{% if service._id|string in user_saved_ids %}Unsave{% else %}Save{% endif %}">
+                        <i class="{% if service._id|string in user_saved_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                    </button>
+                    
+                    <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-outline-primary btn-sm">
+                        View Details
+                    </a>
+                    
+                    <a href="tel:{{ service.phone }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-phone"></i> Call
+                    </a>
+                    
+                    {% if service.whatsapp %}
+                        <a href="https://wa.me/{{ service.whatsapp }}" class="btn btn-success btn-sm">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle"></i> No services found. Try a different search or browse categories from the home page.
+    </div>
+{% endif %}
+{% endblock %}

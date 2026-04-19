@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users"></i> All Providers</h2>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if providers %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Provider Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Area</th>
+                                <th>Added Services</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for provider in providers %}
+                            <tr>
+                                <td>{{ provider.name }}</td>
+                                <td>{{ provider.email }}</td>
+                                <td>{{ provider.phone }}</td>
+                                <td>{{ provider.area_name|default('N/A') }}</td>
+                                <td>
+                                    {% if provider.service_count and provider.service_count > 0 %}
+                                        <a href="{{ url_for('admin_provider_services', provider_id=provider._id) }}" 
+                                           class="btn btn-success btn-sm" title="View Services">
+                                            <i class="fas fa-store"></i> {{ provider.service_count }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted"><i class="fas fa-store-slash"></i> 0</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if provider.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('admin_provider_services', provider_id=provider._id) }}" 
+                                       class="btn btn-info btn-sm" title="View Services">
+                                        <i class="fas fa-store"></i> View Services
+                                    </a>
+                                    {% if provider.is_active %}
+                                    <a href="{{ url_for('toggle_user_active', user_id=provider._id) }}" 
+                                       class="btn btn-warning btn-sm" title="Deactivate">
+                                        <i class="fas fa-ban"></i> Deactivate
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('toggle_user_active', user_id=provider._id) }}" 
+                                       class="btn btn-success btn-sm" title="Activate"
+                                       {% if provider.service_count == 0 %}onclick="return confirm('This provider has no services. Are you sure you want to activate them?')"{% endif %}>
+                                        <i class="fas fa-check"></i> Activate
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted text-center py-4">No providers found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

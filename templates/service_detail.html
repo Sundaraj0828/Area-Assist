@@ -1,0 +1,1291 @@
+{% extends "base.html" %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+#map, #map2 { height: 300px; width: 100%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+
+                 <h2 class="card-title">{{ service.name | upper }}</h2>
+                <span class="badge bg-primary mb-3">{{ service.category }}</span>
+                <!-- Image Gallery Section -->
+                <div class="service-image-gallery mb-4">
+                    {% set total_images = (service.photos|length if service.photos else 0) + (1 if service.image else 0) %}
+                    {% if total_images > 0 %}
+                    <!-- Main Image Display -->
+                    <div class="main-image-container position-relative rounded-top rounded-bottom-0">
+                        <img src="{{ service.image if service.image else (service.photos[0] if service.photos else '') }}" 
+                             alt="{{ service.name }}" 
+                             class="img-fluid rounded-top rounded-bottom-0 main-image" 
+                             id="mainImage"
+                             style="width: 100%; height: 100%; object-fit: cover;">
+                        
+                        <!-- Navigation Arrows -->
+                        {% if total_images > 1 %}
+                        <button class="nav-btn nav-prev" onclick="changeImage(-1)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="nav-btn nav-next" onclick="changeImage(1)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        {% endif %}
+                        
+                        <!-- Image Counter -->
+                        <div class="image-counter">
+                            <span id="currentImageNum">1</span> / <span id="totalImageNum">{{ total_images }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Thumbnail Gallery -->
+                    <div class="thumbnail-container d-flex rounded-bottom rounded-top-0">
+                        {% if service.image %}
+                        <img src="{{ service.image }}" 
+                             alt="Image 1" 
+                             class="thumbnail {% if not service.photos or service.photos|length == 0 %}active{% endif %}"
+                             onclick="showImage(0)">
+                        {% endif %}
+                        {% if service.photos %}
+                        {% set main_image_offset = 1 if service.image else 0 %}
+                        {% for photo in service.photos %}
+                        <img src="{{ photo }}" 
+                             alt="Image {{ loop.index + main_image_offset }}" 
+                             class="thumbnail {% if loop.first and not service.image %}active{% endif %}"
+                             onclick="showImage({{ loop.index0 + main_image_offset }})">
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <!-- No Image Placeholder -->
+                    <div class="no-image-placeholder d-flex align-items-center justify-content-center" style="height: 300px; background: #f8f9fa; border-radius: 8px;">
+                        <div class="text-center text-muted">
+                            <i class="fas fa-image fa-4x mb-3"></i>
+                            <p>No images available</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if session.get('user_id') and (session.get('user_id') == service.owner_id|string ) %}
+                <div class="mt-2 mb-3 text-center bg-secondary p-3 rounded d-flex justify-content-between">
+                    <!-- Direct Upload Section -->
+                    <form method="POST" action="{{ url_for('upload_service_image', service_id=service._id) }}" enctype="multipart/form-data" class="d-inline-block me-2" style="vertical-align: middle;">
+                        <div class="input-group " >
+                            <input type="file" name="image" class="form-control " accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" required>
+                            <button type="submit" class="btn btn-success "><i class="fas fa-upload"></i> Upload</button>
+                        </div>
+                    </form>
+                    <button class="btn btn-dark " onclick="openImageManager();" style="vertical-align: middle;">
+                        <i class="fas fa-images"></i> Manage Images
+                    </button>
+                    {% if service.status == 'approved' %}
+                    <form method="POST" action="{{ url_for('clone_service', service_id=service._id) }}" style="vertical-align: middle;">
+                        <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to clone this service?');">
+                            <i class="fas fa-copy"></i> Clone
+                        </button>
+                    </form>
+                    <a href="{{ url_for('edit_service', service_id=service._id) }}" class="btn btn-warning" style="vertical-align: middle;">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% if service.avg_rating %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-star"></i> {{ service.avg_rating }} ({{ reviews|length }} reviews)
+                    </span>
+                {% endif %}
+                {% if service.status == 'pending' %}
+                    <span class="badge bg-secondary">Pending Approval</span>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row mt-3">
+                    <div class="col-md-7">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5><i class="fas fa-info-circle"></i> Description</h5>
+                        <p>{{ service.description }}</p>
+                        <hr>
+                        <h5><i class="fas fa-map-marker-alt"></i> Address</h5>
+                        <table class="table table-hover mb-3">
+                            <tr>
+                                <td class="py-0 col-3"><small class="text-muted">Area Name</small></td>
+                                <td class="py-0 col-9"><p> {% if service.area_name %}{{ service.area_name|title }}{% endif %}</p></td>
+                            </tr>
+                            <tr>
+                                <td class="py-0"><small class="text-muted">Address</small></td>
+                                <td class="py-0"><p> {{ service.address|title }}</p></td>
+                            </tr>
+                            <tr>
+                                <td class="py-0"><small class="text-muted">Pincode</small></td>
+                                <td class="py-0"><p> {{ service.pincode }}</p></td>
+                            </tr>
+                            {% if session.get('user_id') == service.owner_id|string %}
+                            <tr>
+                                <td class="py-0"><small class="text-muted">Location Coordinates</small></td>
+                                <td class="py-0">
+                                    {% if map_lat and map_lng %}
+                                        <span class="badge bg-success mb-2"><i class="fas fa-check"></i> Set: {{ service.lat }}, {{ service.lng }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning mb-2"><i class="fas fa-exclamation"></i> Not Set</span>
+                                    {% endif %}
+                                    
+                                    
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                        <h5><i class="fas fa-phone"></i> Contact</h5>
+                        {% if session %}
+                            <p>Phone: {{ service.phone }}</p>
+                            {% if service.whatsapp %}
+                                <p>WhatsApp: {{ service.whatsapp }}</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted"><i class="fas fa-lock"></i> Login to view contact details</p>
+                        {% endif %}
+                        
+                        
+                            </div>
+                        </div>
+                        
+                        
+                        
+                        
+                    
+                    </div>
+                    <!-- First Timing Section -->
+                    <div class="col-md-5">
+                        <div class="card timings-card">
+                            <div class="card-body">
+                                <h5 class="text-white"><i class="fas fa-clock"></i> Timings</h5>
+                                {% if service.timings %}
+                                    {% set day_timings = service.timings | expand_timings %}
+                                    <table class="table table-hover table-bordered timings-table">
+                                        {% for day, timing in day_timings.items() %}
+                                            {% if timing %}
+                                                <tr>
+                                                    <td class="col-5 text-white"><strong>{{ day }}</strong></td>
+                                                    <td class="col-7 text-end text-white">{{ timing }}</td>
+                                                </tr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </table>
+                                {% else %}
+                                    <p class="text-white-50">Timings not available</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if session.get('user_id') and session.get('role') == 'customer' and provider %}
+                        
+                        <div class="card provider-card p-3 rounded" style="background: linear-gradient(135deg, var(--info-color) 0%, #252174 100%); color: white;">
+                            <h5 class="card-title"><i class="fas fa-user-tie me-2"></i>Service Provider</h5>
+                            <hr>
+                            
+                            <div class="card-body">
+                                <p class="mb-2">
+                                    <small class="fst-italic"><i class="fas fa-user me-2"></i> Name:</small>
+                                    <strong>{{ provider.name|title }}</strong>
+                                </p>
+                                <p class="mb-2"><i class="fas fa-phone me-2"></i><strong>Phone:</strong> {{ provider.phone }}</p>
+                                <p class="mb-2"><i class="fas fa-envelope me-2"></i><strong>Email:</strong> {{ provider.email }}</p>
+                                {% if provider.area_name %}
+                                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i><strong>Area:</strong> {{ provider.area_name|title }}</p>
+                                {% endif %}
+                            </div>                            
+                        </div>
+                        {% endif %}
+                        
+                    </div>
+                </div>
+                
+                 
+                
+                {% if service.services %}
+                <div class="mt-3">
+                    <h5>Services Offered</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for s in service.services %}
+                            <span class="badge bg-light text-dark border">{{ s }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    {% if session and session.get('user_id') != service.owner_id|string %}
+                    <a href="tel:{{ service.phone }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-phone"></i> Call Now
+                    </a>
+                    {% if service.whatsapp %}
+                        <a href="https://wa.me/{{ service.whatsapp }}" class="btn btn-success btn-lg">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-map"></i> Location</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if map_lat and map_lng %}
+                <div id="map" style="height: 300px; width: 100%;"></div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var lat = {{ map_lat }};
+                        var lng = {{ map_lng }};
+                        var map = L.map('map').setView([lat, lng], 15);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        }).addTo(map);
+                        L.marker([lat, lng]).addTo(map);
+                    });
+                </script>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">Location not available</p>
+                    {% if service.area_name or service.address %}
+                    <p class="small text-muted mt-2">
+                        {% if service.area_name %}{{ service.area_name|title }}, {% endif %}
+                        {% if service.address %}{{ service.address.title }}{% endif %}
+                        {% if service.pincode %}- {{ service.pincode }}{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="p-3">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={% if map_lat and map_lng %}{{ map_lat }},{{ map_lng }}{% else %}{{ service.address }}, {{ service.area_name }}, {{ service.pincode }}{% endif %}" 
+                       target="_blank" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if session.get('role') == 'customer' and session.get('user_id') and service.status == 'approved' and service.booking_available %}
+        <div class="card bg-primary shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Book This Service</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('book_service') }}" method="POST">
+                    <input type="hidden" name="service_id" value="{{ service._id }}">
+                    <input type="hidden" name="provider_id" value="{{ service.owner_id }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Time</label>
+                            <input type="time" class="form-control" name="time" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Describe your requirements..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark">Submit Booking Request</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        <!-- Bookings Section -->
+        {% if session.get('user_id') and (session.get('user_id') == service.owner_id|string ) %}
+        {% if bookings %}
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Bookings</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover border-secondary">
+                        <!-- <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Notes</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead> -->
+                        <tbody>
+                            {% for booking in bookings %}
+                            <tr>
+                                <td>{{ booking.customer_name|default('N/A')|title }}
+                                    <br>{{ booking.notes|default('N/A') }}
+                                </td>
+                                <td>{{ booking.date }}<br>{{ booking.time|time_12h if booking.time else 'N/A' }}</td>
+                                
+                                <td>
+                                    <span class="badge {% if booking.status == 'confirmed' %}bg-success{% elif booking.status == 'pending' %}bg-warning{% elif booking.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ booking.status|capitalize }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        <div class="card shadow my-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Reviews</h5>
+            </div>
+            <div class="card-body">
+                {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="review-avatar me-2">
+                                {% if review.user_avatar %}
+                                <img src="{{ review.user_avatar }}" alt="{{ review.user_name }}" class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                <div class="avatar-circle badge bg-secondary rounded-pill py-3 px-3">{{ review.user_name[0]|upper if review.user_name else 'U' }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <strong>{{ review.user_name |upper }}</strong>
+                                {% if review.user_area %}
+                                <br><small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ review.user_area | title }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="ms-auto text-end">
+                                <span class="text-warning">
+                                    {% for i in range(review.rating) %}
+                                    <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                    <span class="badge bg-secondary rounded-pill px-2 pt-1 pb-0">
+                                        <h5 >{{review.rating}}</h5>
+                                    </span>
+                                    
+                                </span>
+                                <br><small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                        <p class="mb-0">{{ review.comment }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No reviews yet.</p>
+                {% endif %}
+                
+                {% if session.get('role') == 'customer' and session.get('user_id') %}
+                <hr>
+                <h5>Add Your Review</h5>
+                <form action="{{ url_for('add_review') }}" method="POST">
+                    <input type="hidden" name="service_id" value="{{ service._id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <select class="form-select" name="rating">
+                            <option value="5">5 Stars - Excellent</option>
+                            <option value="4">4 Stars - Good</option>
+                            <option value="3">3 Stars - Average</option>
+                            <option value="2">2 Stars - Poor</option>
+                            <option value="1">1 Star - Terrible</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comment</label>
+                        <textarea class="form-control" name="comment" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% if session.get('user_id') and (session.get('user_id') == service.owner_id|string ) %}
+        <div class="card bg-primary">
+            <div class="card-body">
+                <h4 class="card-title">Set coordinates</h4>
+                <div class="input-group mb-2">
+                    <input type="text" class="form-control form-control-sm" id="serviceCoordsInput" 
+                            placeholder="Or paste coordinates (e.g., 20.5937, 78.9629)">
+                    <button class="btn btn-sm btn-success" type="button" onclick="parseServiceCoords()">
+                        <i class="fas fa-check"></i> Apply
+                    </button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="getServiceCurrentLocation()">
+                        <i class="fas fa-location-arrow"></i> Current Location
+                    </button>
+                    <button type="button" class="btn btn-sm btn-dark" onclick="openServiceGoogleMaps()">
+                        <i class="fas fa-map"></i> Pick from Google
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+
+<style>
+/* Image Gallery Styles */
+.service-image-gallery {
+    position: relative;
+}
+
+.main-image-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    height: 400px; /* Fixed height for consistent UI */
+    background: #f8f9fa;
+}
+
+[data-theme="dark"] .main-image-container {
+    background: #2d3748;
+}
+
+.main-image {
+    transition: opacity 0.3s ease;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures image fills the container */
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    font-size: 18px;
+}
+
+.nav-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.nav-prev {
+    left: 15px;
+}
+
+.nav-next {
+    right: 15px;
+}
+
+.image-counter {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.thumbnail-container {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    scrollbar-width: thin;
+    cursor: grab;
+    user-select: none;
+}
+
+.thumbnail-container:active {
+    cursor: grabbing;
+}
+
+.thumbnail-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.thumbnail-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.thumbnail-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+[data-theme="dark"] .thumbnail-container::-webkit-scrollbar-track {
+    background: #2d3748;
+}
+
+[data-theme="dark"] .thumbnail-container::-webkit-scrollbar-thumb {
+    background: #4a5568;
+}
+
+[data-theme="dark"] .thumbnail-container {
+    background: #2d3748;
+}
+
+.thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.thumbnail:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.thumbnail.active {
+    border-color: #0d6efd;
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.no-image-placeholder {
+    border: 2px dashed #dee2e6;
+}
+
+/* Timings card - theme aware styling */
+.timings-card {
+    background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%);
+    color: #212529;
+}
+.timings-card h5,
+.timings-card p,
+.timings-card td,
+.timings-card th,
+.timings-card strong {
+    color: #212529 !important;
+}
+.timings-card .table {
+    --bs-table-bg: transparent;
+    color: #212529 !important;
+    --bs-table-color: #212529;
+}
+.timings-card .table td,
+.timings-card .table th {
+    background-color: transparent;
+    border-color: #dee2e6;
+}
+/* Light mode (default) - light card */
+[data-theme="light"] .timings-card {
+    background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%);
+    color: #212529;
+}
+[data-theme="light"] .timings-card h5,
+[data-theme="light"] .timings-card p,
+[data-theme="light"] .timings-card td,
+[data-theme="light"] .timings-card th,
+[data-theme="light"] .timings-card strong {
+    color: #212529 !important;
+}
+/* Dark mode - dark card */
+[data-theme="dark"] .timings-card {
+    background: linear-gradient(135deg, #1e2330 0%, #2d3238 100%);
+    color: #f8f9fa;
+}
+[data-theme="dark"] .timings-card h5,
+[data-theme="dark"] .timings-card p,
+[data-theme="dark"] .timings-card td,
+[data-theme="dark"] .timings-card th,
+[data-theme="dark"] .timings-card strong {
+    color: #f8f9fa !important;
+}
+[data-theme="dark"] .timings-card .table td,
+[data-theme="dark"] .timings-card .table th {
+    border-color: #495057;
+}
+</style>
+
+<!-- Service Image Gallery Styles -->
+
+<script>
+// Build image array from service data
+const allImages = [];
+{% if service.image %}
+allImages.push('{{ service.image }}');
+{% endif %}
+{% if service.photos %}
+{% for photo in service.photos %}
+allImages.push('{{ photo }}');
+{% endfor %}
+{% endif %}
+
+let currentImageIndex = 0;
+const totalImages = allImages.length;
+
+function changeImage(direction) {
+    if (totalImages <= 1) return;
+    
+    currentImageIndex = (currentImageIndex + direction + totalImages) % totalImages;
+    updateMainImage();
+}
+
+function showImage(index) {
+    if (index >= 0 && index < totalImages) {
+        currentImageIndex = index;
+        updateMainImage();
+    }
+}
+
+function updateMainImage() {
+    const mainImg = document.getElementById('mainImage');
+    if (mainImg && allImages[currentImageIndex]) {
+        mainImg.style.opacity = '0.5';
+        setTimeout(() => {
+            mainImg.src = allImages[currentImageIndex];
+            mainImg.style.opacity = '1';
+        }, 150);
+    }
+    
+    // Update counter
+    document.getElementById('currentImageNum').textContent = currentImageIndex + 1;
+    
+    // Update thumbnail active state
+    document.querySelectorAll('.thumbnail').forEach((thumb, idx) => {
+        if (idx === currentImageIndex) {
+            thumb.classList.add('active');
+        } else {
+            thumb.classList.remove('active');
+        }
+    });
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') {
+        changeImage(-1);
+    } else if (e.key === 'ArrowRight') {
+        changeImage(1);
+    }
+});
+
+// Drag to scroll functionality for thumbnails
+(function() {
+    var container = document.querySelector('.thumbnail-container');
+    if (!container) return;
+    
+    var isDown = false;
+    var startX;
+    var scrollLeft;
+    
+    container.addEventListener('mousedown', function(e) {
+        isDown = true;
+        container.style.cursor = 'grabbing';
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+    });
+    
+    container.addEventListener('mouseleave', function() {
+        isDown = false;
+        container.style.cursor = 'grab';
+    });
+    
+    container.addEventListener('mouseup', function() {
+        isDown = false;
+        container.style.cursor = 'grab';
+    });
+    
+    container.addEventListener('mousemove', function(e) {
+        if (!isDown) return;
+        e.preventDefault();
+        var x = e.pageX - container.offsetLeft;
+        var walk = (x - startX) * 2;
+        container.scrollLeft = scrollLeft - walk;
+    });
+})();
+</script>
+
+<!-- Image Manager Modal -->
+<div id="imageManagerModal" class="custom-modal" style="display: none;">
+    <div class="custom-modal-content border border-info border-3">
+        <div class="custom-modal-header bg-info">
+            <h5 class="badge bg-secondary">Manage Images</h5>
+            <span class="custom-modal-close" onclick="closeImageManager()">&times;</span>
+        </div>
+        <div class="custom-modal-body">
+            <!-- Existing Images Section -->
+            <div class="mb-3">
+                <h6 class="text-dark">Your Images - Click to view, X to delete</h6>
+                <div id="managerImageList" class="row g-2">
+                    {% if service.image %}
+                    <div class="col-md-4 col-6">
+                        <div class="position-relative">
+                            <img src="{{ service.image }}" alt="Main Image" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover; cursor: pointer;" onclick="viewFullImage('{{ service.image }}')">
+                            <span class="badge bg-primary position-absolute top-0 start-0 m-1">Main</span>
+                            <div class="position-absolute top-0 end-0 m-1 d-flex">
+                                <button type="button" class="btn btn-info btn-sm" onclick="viewFullImage('{{ service.image }}')" title="View"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="btn btn-danger btn-sm ms-1" onclick="deleteManagerImage('{{ service.image }}', 'main')" title="Delete">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if service.photos %}
+                    {% for photo in service.photos %}
+                    <div class="col-md-4 col-6">
+                        <div class="position-relative">
+                            <img src="{{ photo }}" alt="Photo {{ loop.index }}" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover; cursor: pointer;" onclick="viewFullImage('{{ photo }}')">
+                            <div class="position-absolute top-0 end-0 m-1 d-flex">
+                                <button type="button" class="btn btn-info btn-sm" onclick="viewFullImage('{{ photo }}')" title="View"><i class="fas fa-eye"></i></button>
+                                <button type="button" class="btn btn-danger btn-sm ms-1" onclick="deleteManagerImage('{{ photo }}', 'gallery')" title="Delete">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% if not service.image and not service.photos %}
+                <p class="text-muted">No images uploaded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeImageManager()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Custom Modal Styles
+var style = document.createElement('style');
+style.textContent = `
+.custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.custom-modal-content {
+    background-color: #fff;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.custom-modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.custom-modal-header h5 {
+    margin: 0;
+}
+.custom-modal-close {
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #999;
+}
+.custom-modal-close:hover {
+    color: #333;
+}
+.custom-modal-body {
+    padding: 20px;
+}
+.custom-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+`;
+document.head.appendChild(style);
+
+// Image Manager Functions
+function openImageManager() {
+    var modal = document.getElementById('imageManagerModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeImageManager() {
+    var modal = document.getElementById('imageManagerModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Preview image before upload
+document.getElementById('managerServiceImage').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    var preview = document.getElementById('managerUploadPreview');
+    var previewImg = document.getElementById('managerPreviewImg');
+    
+    if (file) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
+    }
+});
+
+function uploadManagerImage() {
+    var fileInput = document.getElementById('managerServiceImage');
+    var file = fileInput.files[0];
+    
+    if (!file) {
+        showManagerMessage('Please select a file', 'danger');
+        return;
+    }
+    
+    var formData = new FormData();
+    formData.append('image', file);
+    
+    fetch('/service/{{ service._id }}/upload-image', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showManagerMessage('Image uploaded successfully!', 'success');
+            
+            // Clear file input
+            fileInput.value = '';
+            var preview = document.getElementById('managerUploadPreview');
+            if (preview) {
+                preview.style.display = 'none';
+            }
+            
+            // Close modal and reload page
+            closeImageManager();
+            location.reload();
+        } else {
+            showManagerMessage(data.error || 'Upload failed', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Upload error:', error);
+        showManagerMessage('Upload failed: ' + error.message, 'danger');
+    });
+}
+
+function deleteManagerImage(imageUrl, type) {
+    if (!confirm('Are you sure you want to delete this image?')) {
+        return;
+    }
+    
+    var formData = new FormData();
+    formData.append('image_url', imageUrl);
+    formData.append('image_type', type);
+    
+    fetch('/service/{{ service._id }}/delete-image', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showManagerMessage('Image deleted successfully!', 'success');
+            // Close modal
+            closeImageManager();
+            // Reload page immediately
+            location.reload();
+        } else {
+            showManagerMessage(data.error || 'Delete failed', 'danger');
+        }
+    })
+    .catch(error => {
+        showManagerMessage('Error: ' + error, 'danger');
+    });
+}
+
+function showManagerMessage(message, type) {
+    var msgDiv = document.getElementById('managerUploadMessage');
+    msgDiv.textContent = message;
+    msgDiv.className = 'alert alert-' + type;
+    msgDiv.style.display = 'block';
+    
+    setTimeout(function() {
+        msgDiv.style.display = 'none';
+    }, 3000);
+}
+
+// View full image in modal
+function viewFullImage(imageUrl) {
+    var modal = document.getElementById('fullImageModal');
+    if (!modal) {
+        // Create modal if it doesn't exist
+        modal = document.createElement('div');
+        modal.id = 'fullImageModal';
+        modal.style.cssText = 'display: flex; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); align-items: center; justify-content: center; flex-direction: column;';
+        modal.onclick = function(e) {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        var img = document.createElement('img');
+        img.id = 'fullImageViewer';
+        img.style.cssText = 'max-width: 90%; max-height: 85vh; object-fit: contain; border-radius: 4px;';
+        
+        var closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = 'position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; background: none; border: none;';
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        };
+        
+        var downloadBtn = document.createElement('a');
+        downloadBtn.id = 'downloadImageBtn';
+        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Download';
+        downloadBtn.style.cssText = 'color: white; font-size: 16px; margin-top: 15px; text-decoration: none; padding: 10px 20px; border: 1px solid white; border-radius: 4px; transition: background 0.3s;';
+        downloadBtn.onmouseover = function() {
+            downloadBtn.style.background = 'rgba(255,255,255,0.2)';
+        };
+        downloadBtn.onmouseout = function() {
+            downloadBtn.style.background = 'transparent';
+        };
+        
+        modal.appendChild(closeBtn);
+        modal.appendChild(img);
+        modal.appendChild(downloadBtn);
+        document.body.appendChild(modal);
+    }
+    
+    var img = document.getElementById('fullImageViewer');
+    var downloadBtn = document.getElementById('downloadImageBtn');
+    
+    // Set image source
+    img.src = imageUrl;
+    downloadBtn.href = imageUrl;
+    downloadBtn.download = '';
+    
+    downloadBtn.onclick = function(e) {
+        e.preventDefault();
+        var link = document.createElement('a');
+        link.href = img.src;
+        link.download = imageUrl.split('/').pop();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    document.getElementById('fullImageModal').style.display = 'flex';
+}
+</script>
+
+<script>
+function saveServiceCoords(lat, lng) {
+    // Save coordinates via AJAX API
+    fetch('{{ url_for("update_service_location") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'service_id={{ service._id }}&lat=' + lat + '&lng=' + lng
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Location saved successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => alert('Error saving location: ' + error));
+}
+
+function parseServiceCoords() {
+    const coordsInput = document.getElementById('serviceCoordsInput');
+    const coords = coordsInput.value.trim();
+    
+    if (!coords) {
+        alert('Please paste coordinates');
+        return;
+    }
+    
+    // Handle formats: "20.5937, 78.9629" or "20.5937,78.9629" or "20.5937 78.9629"
+    const parts = coords.split(/[,\s]+/).filter(p => p);
+    
+    if (parts.length >= 2) {
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            saveServiceCoords(lat, lng);
+        } else {
+            alert('Invalid coordinates');
+        }
+    } else {
+        alert('Invalid format. Use: latitude, longitude');
+    }
+}
+
+function getServiceCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            document.getElementById('serviceCoordsInput').value = lat + ', ' + lng;
+            saveServiceCoords(lat, lng);
+        }, function(error) {
+            alert('Error getting location: ' + error.message);
+        });
+    } else {
+        alert('Geolocation is not supported by this browser');
+    }
+}
+
+function openServiceGoogleMaps() {
+    const lat = '{{ service.lat|default("") }}';
+    const lng = '{{ service.lng|default("") }}';
+    const address = '{{ service.address|default("") }}';
+    
+    if (lat && lng) {
+        window.open('https://www.google.com/maps/@' + lat + ',' + lng + ',15z', '_blank');
+    } else if (address) {
+        window.open('https://www.google.com/maps/search/' + encodeURIComponent(address + ', India'), '_blank');
+    } else {
+        window.open('https://www.google.com/maps', '_blank');
+    }
+}
+
+
+</script>
+
+{% endblock %}
+
+{% block public_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+                
+                <h2 class="card-title">{{ service.name }}</h2>
+                <span class="badge bg-primary">{{ service.category }}</span>
+                {% if service.avg_rating %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-star"></i> {{ service.avg_rating }} ({{ reviews|length }} reviews)
+                    </span>
+                {% endif %}
+                {% if service.status == 'pending' %}
+                    <span class="badge bg-secondary">Pending Approval</span>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row mt-3">
+                    <div class="col-md-8">
+                        <h5><i class="fas fa-info-circle"></i> Description</h5>
+                        <p>{{ service.description }}</p>
+                        <h5><i class="fas fa-map-marker-alt"></i> Address</h5>
+                        <p>{% if service.area_name %}{{ service.area_name }}<br>{% endif %}{{ service.address }}<br>Pincode: {{ service.pincode }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card timings-card">
+                            <div class="card-body">
+                                <h5 class="text-white"><i class="fas fa-clock"></i> Timings</h5>
+                                {% if service.timings %}
+                                    {% set st = service.timings.split(',') %}
+                                    <table class="table table-hover table-bordered timings-table">
+                                        {% for i in st %}
+                                            {% set x = i.strip() %}
+                                            {% if x %}
+                                                {% set dt = x.split(' ') %}  
+                                                <tr>
+                                                    <td class="col-5 text-white"><strong>{{dt[0] | upper}}</strong></td>
+                                                    <td class="col-7 text-end text-white">{{dt[1]}}</td>
+                                                </tr>  
+                                            {% endif %}
+                                        {% endfor %}
+                                    </table>
+                                {% else %}
+                                    <p class="text-white-50">Timings not available</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-phone"></i> Contact</h5>
+                        {% if session %}
+                            <p>Phone: {{ service.phone }}</p>
+                            {% if service.whatsapp %}
+                                <p>WhatsApp: {{ service.whatsapp }}</p>
+                            {% endif %}
+                        {% else %}
+                            <p class="text-muted"><i class="fas fa-lock"></i> Login to view contact details</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        
+                    </div>
+                </div>
+                
+                {% if service.services %}
+                <div class="mt-3">
+                    <h5>Services Offered</h5>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for s in service.services %}
+                            <span class="badge bg-light text-dark border">{{ s }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    {% if session %}
+                    <a href="tel:{{ service.phone }}" class="btn btn-success btn-lg">
+                        <i class="fas fa-phone"></i> Call Now
+                    </a>
+                    {% if service.whatsapp %}
+                        <a href="https://wa.me/{{ service.whatsapp }}" class="btn btn-success btn-lg">
+                            <i class="fab fa-whatsapp"></i> WhatsApp
+                        </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Reviews</h5>
+            </div>
+            <div class="card-body">
+                {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="review-avatar me-2">
+                                {% if review.user_avatar %}
+                                <img src="{{ review.user_avatar }}" alt="{{ review.user_name }}" class="rounded-circle" width="40" height="40">
+                                {% else %}
+                                <div class="avatar-circle badge bg-secondary rounded-pill py-3 px-3">{{ review.user_name[0]|upper if review.user_name else 'U' }}</div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <strong>{{ review.user_name |upper }}</strong>
+                                {% if review.user_area %}
+                                <br><small class="text-muted"><i class="fas fa-map-marker-alt"></i> {{ review.user_area | title }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="ms-auto text-end">
+                                <span class="text-warning">
+                                    <span class="badge bg-secondary rounded-pill px-2 pt-1 pb-0">
+                                        <h5 >{{review.rating}}</h5>
+                                    </span>
+                                    {% for i in range(review.rating) %}
+                                    <i class="fas fa-star"></i>
+                                    {% endfor %}
+                                </span>
+                                <br><small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d') }}</small>
+                            </div>
+                        </div>
+                        <p class="mb-0">{{ review.comment }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No reviews yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-map"></i> Location</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if map_lat and map_lng %}
+                <div id="map2" style="height: 300px; width: 100%;"></div>
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        var lat = {{ map_lat }};
+                        var lng = {{ map_lng }};
+                        var map = L.map('map2').setView([lat, lng], 15);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        }).addTo(map);
+                        L.marker([lat, lng]).addTo(map);
+                    });
+                </script>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">Location not available</p>
+                    {% if service.area_name or service.address %}
+                    <p class="small text-muted mt-2">
+                        {% if service.area_name %}{{ service.area_name|title }}, {% endif %}
+                        {% if service.address %}{{ service.address.title }}{% endif %}
+                        {% if service.pincode %}- {{ service.pincode }}{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="p-3">
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={% if map_lat and map_lng %}{{ map_lat }},{{ map_lng }}{% else %}{{ service.address }}, {{ service.area_name }}, {{ service.pincode }}{% endif %}" 
+                       target="_blank" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-directions"></i> Get Directions
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

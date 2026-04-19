@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4 fw-bold"><i class="fas fa-cogs me-2 text-danger"></i>Admin Dashboard</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-2">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #696cff, #8b85ff); color: white; cursor: pointer;" onclick="window.location='{{ url_for('admin_providers') }}'">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.total_services }}</h3>
+                    <p class="mb-0">Total Services</p>
+                </div>
+                <i class="fas fa-store fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-arrow-right me-1"></i> By Provider</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #71dd37, #55e64d); color: white;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.verified_providers }}</h3>
+                    <p class="mb-0">Verified Providers</p>
+                </div>
+                <i class="fas fa-user-check fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <a href="{{ url_for('admin_providers') }}" class="btn btn-sm btn-light">
+                    <i class="fas fa-store me-1"></i> View All Services
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #03c3ec, #37d5f3); color: white; cursor: pointer;" onclick="window.location='{{ url_for('admin_users') }}'">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.active_users }}</h3>
+                    <p class="mb-0">Active Users</p>
+                </div>
+                <i class="fas fa-users fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-arrow-right me-1"></i> View All</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #ffab00, #ffc107); color: #233446; cursor: pointer;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.pending_approvals }}</h3>
+                    <p class="mb-0">Pending Approvals</p>
+                </div>
+                <i class="fas fa-clock fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-exclamation-circle me-1"></i> Needs Action</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #233446, #2d3e50); color: white;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.total_bookings }}</h3>
+                    <p class="mb-0">Total Bookings</p>
+                </div>
+                <i class="fas fa-calendar-check fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-calendar me-1"></i> All Time</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #ff3e1d, #ff6b5b); color: white;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.total_reviews }}</h3>
+                    <p class="mb-0">Total Reviews</p>
+                </div>
+                <i class="fas fa-star fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-star-half-alt me-1"></i> Customer Feedback</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #28a745, #48c764); color: white;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.approved_services }}</h3>
+                    <p class="mb-0">Approved Services</p>
+                </div>
+                <i class="fas fa-check-circle fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-check me-1"></i> Active Listings</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card h-100" style="background: linear-gradient(135deg, #dc3545, #e66a6a); color: white;">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0 fw-bold">{{ stats.rejected_services }}</h3>
+                    <p class="mb-0">Rejected Services</p>
+                </div>
+                <i class="fas fa-times-circle fa-2x opacity-50"></i>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small class="opacity-75"><i class="fas fa-ban me-1"></i> Not Approved</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning bg-opacity-10">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-exclamation-circle me-2"></i>Pending Service Approvals</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_services %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Service Name</th>
+                                    <th>Category</th>
+                                    <th>Phone</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for service in pending_services %}
+                                <tr>
+                                    <td>{{ service.name }}</td>
+                                    <td>{{ service.category }}</td>
+                                    <td>{{ service.phone }}</td>
+                                    <td>
+                                        <a href="{{ url_for('service_detail', service_id=service._id) }}" 
+                                           class="btn btn-info btn-sm" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('approve_service', service_id=service._id) }}" 
+                                           class="btn btn-success btn-sm" title="Approve">
+                                            <i class="fas fa-check"></i>
+                                        </a>
+                                        <a href="{{ url_for('reject_service', service_id=service._id) }}" 
+                                           class="btn btn-danger btn-sm" title="Reject">
+                                            <i class="fas fa-times"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>No pending approvals!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info bg-opacity-10">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-chart-line me-2"></i>New in Last 30 Days</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-primary fw-bold">{{ stats.new_users_30d }}</h3>
+                        <p class="text-muted mb-0">New Users</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-success fw-bold">{{ stats.new_services_30d }}</h3>
+                        <p class="text-muted mb-0">New Services</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark bg-opacity-10">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-users me-1"></i> Manage Users
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('admin_services') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-store me-1"></i> Manage Services
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ url_for('admin_reports') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-chart-bar me-1"></i> View Reports
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,501 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<div class="row">
+    <!-- Registration Form -->
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-store"></i> {% if service %}Edit Service{% else %}Register Your Service{% endif %}</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="lat" value="">
+                    <input type="hidden" name="lng" value="">
+                    <div class="row">
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">Service/Business Name *</label>
+                            <input type="text" class="form-control" name="name" placeholder="Enter Service/Business" value="{{ service.name if service else '' }}" required>
+                        </div>
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">Category *</label>
+                            <select class="form-select" name="category" required>
+                                <option value="">Select Category</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}" {% if service and service.category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">Contact Number *</label>
+                            <input type="tel" class="form-control" name="phone" placeholder="Contact Number" value="{{ user.phone|default('') }}" required>
+                        </div>
+                                           
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">WhatsApp Number</label>
+                            <input type="tel" class="form-control" name="whatsapp" placeholder="Whatsapp Number" value="{{ user.whatsapp|default('') }}">
+                        </div>
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">Area Name *</label>
+                            <input type="text" class="form-control" name="area_name" placeholder="e.g., Malviya Nagar" value="{{ user.area_name|default('') }}" required>
+                        </div>
+                        <div class="col-xl-4 col-lg-6 col-md-4 mb-3">
+                            <label class="form-label">Pincode *</label>
+                            <input type="text" class="form-control" name="pincode" placeholder="Pincode" value="{{ user.pincode|default('') }}" required>
+                        </div>
+                    </div>
+                    
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Address *</label>
+                            <textarea class="form-control" name="address" rows="3" required>{{ service.address if service else user.address|default('') }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Description" required>{{ service.description if service else '' }}</textarea>
+                    </div>
+                    </div>
+                    
+                    
+                    
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between">Timings * 
+                            <button type="button" class="btn btn-outline-secondary btn-sm " onclick="addTimingRow()">
+                            <i class="fas fa-plus"></i> Add More Timings
+                        </button></label>
+                        <div id="timing-rows">
+                            <div class="timing-row mb-2">
+                                <div class="row g-2">
+                                    <div class="col-md-5">
+                                        <select class="form-select" name="timing_days">
+                                            <option value="Mon-Sun">Mon - Sun (All Days)</option>
+                                            <option value="Mon-Sat">Mon - Sat (Weekdays)</option>
+                                            <option value="Mon-Fri">Mon - Fri (Weekdays Only)</option>
+                                            <option value="Sat-Sun">Sat - Sun (Weekends)</option>
+                                            <option value="Mon">Monday</option>
+                                            <option value="Tue">Tuesday</option>
+                                            <option value="Wed">Wednesday</option>
+                                            <option value="Thu">Thursday</option>
+                                            <option value="Fri">Friday</option>
+                                            <option value="Sat">Saturday</option>
+                                            <option value="Sun">Sunday</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" class="form-control" name="timing_start" value="09:00" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" class="form-control" name="timing_end" value="18:00" required>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-outline-danger" onclick="removeTimingRow(this)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        
+                        <!-- <small class="d-block text-muted mt-2">Example: Mon-Sat: 9AM-7PM, Sun: 10AM-2PM</small> -->
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Coordinates </label>
+                            <input type="text" class="form-control" id="coordinates" placeholder="Paste from Google Maps (e.g., 21.6287, 85.5830)" onchange="parseCoordinates()">
+                            <small class="text-muted">Right-click on location → Copy → Paste here</small>
+                        </div>
+                        <input type="hidden" name="lat" id="lat" value="{{ user.lat|default('') }}">
+                        <input type="hidden" name="lng" id="lng" value="{{ user.lng|default('') }}">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-flex pt-3">
+                                <button type="button" class="btn btn-outline-primary text-nowrap me-3 mt-4 " onclick="getLocation()">
+                                    <i class="fas fa-location-arrow"></i> Current Location
+                                </button>
+                                <button type="button" class="btn btn-outline-success text-nowrap me-3 mt-4" onclick="openGoogleMaps()">
+                                    <i class="fas fa-map-marker-alt"></i> Google Maps
+                                </button>
+                            </div>
+                        </div>
+                    
+                    
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Services Offered</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="services" value="Home Delivery" {% if service and 'Home Delivery' in service.services %}checked{% endif %}>
+                                    <label class="form-check-label">Home Delivery</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="services" value="Pickup & Drop" {% if service and 'Pickup & Drop' in service.services %}checked{% endif %}>
+                                    <label class="form-check-label">Pickup & Drop</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="services" value="Emergency Service" {% if service and 'Emergency Service' in service.services %}checked{% endif %}>
+                                    <label class="form-check-label">Emergency Service</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="booking_available" value="true" id="bookingCheck" {% if service and service.booking_available %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="bookingCheck">
+                                <i class="fas fa-calendar-check"></i> Enable Online Booking
+                            </label>
+                            <p class="text-muted small mb-0">Allow customers to book appointments directly through the platform</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">{% if service %}Update Service{% else %}Submit for Approval{% endif %}</button>
+                </form>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Your service will be reviewed by our team before publishing.</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column -->
+    <div class="col-lg-4">
+        <!-- Quick Stats -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="mb-0">{{ existing_services|length }}</h4>
+                        <small class="text-muted">Total Services</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="mb-0 text-success">{{ existing_services|selectattr('status', 'equalto', 'approved')|list|length }}</h4>
+                        <small class="text-muted">Approved</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="mb-0 text-warning">{{ existing_services|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                        <small class="text-muted">Pending</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="mb-0 text-danger">{{ existing_services|selectattr('status', 'equalto', 'rejected')|list|length }}</h4>
+                        <small class="text-muted">Rejected</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Services Catalogue -->
+        <div class="card shadow mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-book"></i> Service/Business Categories</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Browse available service categories to see what you can register:</p>
+                <div class="row">
+                   
+                    <div class="col-md-12">
+                        <div class="category-list">
+                            {% for cat in categories %}
+                            <div class="category-item d-flex align-items-center p-2 mb-1 rounded">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span>{{ cat }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+        
+         
+        
+        
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+function addTimingRow() {
+    const container = document.getElementById('timing-rows');
+    const newRow = document.createElement('div');
+    newRow.className = 'timing-row mb-2';
+    newRow.innerHTML = `
+        <div class="row g-2">
+            <div class="col-md-5">
+                <select class="form-select" name="timing_days">
+                    <option value="Mon-Sun">Mon - Sun (All Days)</option>
+                    <option value="Mon-Sat">Mon - Sat (Weekdays)</option>
+                    <option value="Mon-Fri">Mon - Fri (Weekdays Only)</option>
+                    <option value="Sat-Sun">Sat - Sun (Weekends)</option>
+                    <option value="Mon">Monday</option>
+                    <option value="Tue">Tuesday</option>
+                    <option value="Wed">Wednesday</option>
+                    <option value="Thu">Thursday</option>
+                    <option value="Fri">Friday</option>
+                    <option value="Sat">Saturday</option>
+                    <option value="Sun">Sunday</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="time" class="form-control" name="timing_start" value="09:00" required>
+            </div>
+            <div class="col-md-3">
+                <input type="time" class="form-control" name="timing_end" value="18:00" required>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger" onclick="removeTimingRow(this)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+function removeTimingRow(button) {
+    const container = document.getElementById('timing-rows');
+    const rows = container.getElementsByClassName('timing-row');
+    if (rows.length > 1) {
+        button.closest('.timing-row').remove();
+    }
+}
+
+function parseCoordinates() {
+    const coordsInput = document.getElementById('coordinates');
+    const latField = document.getElementById('lat');
+    const lngField = document.getElementById('lng');
+    
+    const coords = coordsInput.value.trim();
+    if (!coords) return;
+    
+    // Handle formats: "21.6287, 85.5830" or "21.6287,85.5830" or "21.6287 85.5830"
+    const parts = coords.split(/[,\s]+/).filter(p => p);
+    
+    if (parts.length >= 2) {
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            latField.value = lat;
+            lngField.value = lng;
+        }
+    }
+}
+
+function openGoogleMaps() {
+    // Get address from form fields
+    const addressField = document.querySelector('textarea[name="address"]');
+    const areaNameField = document.querySelector('input[name="area_name"]');
+    const latField = document.getElementById('lat');
+    const lngField = document.getElementById('lng');
+    
+    let searchQuery = '';
+    
+    // Use existing coordinates if available
+    if (latField && latField.value && lngField && lngField.value) {
+        const lat = latField.value;
+        const lng = lngField.value;
+        // Open Google Maps with coordinates
+        window.open(`https://www.google.com/maps/@${lat},${lng},15z`, '_blank');
+        return;
+    }
+    
+    // Otherwise try to use address
+    if (addressField && addressField.value) {
+        searchQuery = addressField.value;
+    } else if (areaNameField && areaNameField.value) {
+        searchQuery = areaNameField.value + ', Odisha, India';
+    } else {
+        // Default to Keonjhar, Odisha, India
+        searchQuery = 'Keonjhar, Odisha, India';
+    }
+    
+    // Open Google Maps with search query
+    window.open(`https://www.google.com/maps/search/${encodeURIComponent(searchQuery)}`, '_blank');
+}
+
+let mapPicker = null;
+let marker = null;
+
+function initMapPicker(searchAddress) {
+    const mapContainer = document.getElementById('mapPicker');
+    if (!mapContainer) return;
+    
+    // If map already exists, just update view and return
+    if (mapPicker) {
+        mapPicker.invalidateSize();
+        return;
+    }
+    
+    // Get initial coordinates from form or geocode address
+    const latInput = document.querySelector('input[name="lat"]');
+    const lngInput = document.querySelector('input[name="lng"]');
+    
+    // Default to Keonjhar, Odisha, India
+    let lat = 21.6287;
+    let lng = 85.5830;
+    let zoomLevel = 10;
+    
+    // If we have existing coordinates in form, use those
+    if (latInput && latInput.value && lngInput && lngInput.value) {
+        lat = parseFloat(latInput.value);
+        lng = parseFloat(lngInput.value);
+        zoomLevel = 15;
+    }
+    
+    // Create map with default coordinates first
+    mapPicker = L.map('mapPicker').setView([lat, lng], zoomLevel);
+    
+    // Add tile layer immediately
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }).addTo(mapPicker);
+    
+    // Fix map size after modal opens
+    setTimeout(() => mapPicker.invalidateSize(), 500);
+    
+    // Add marker if coordinates exist
+    if (latInput && latInput.value) {
+        marker = L.marker([lat, lng]).addTo(mapPicker);
+    }
+    
+    // Handle click on map
+    mapPicker.on('click', function(e) {
+        const { lat, lng } = e.latlng;
+        
+        // Remove existing marker
+        if (marker) {
+            mapPicker.removeLayer(marker);
+        }
+        
+        // Add new marker
+        marker = L.marker([lat, lng]).addTo(mapPicker);
+        
+        // Get address from coordinates using reverse geocoding
+        fetch(`https://photon.komoot.io/api/?lat=${lat}&lon=${lng}&limit=1`)
+            .then(response => response.json())
+            .then(data => {
+                let address = '';
+                let areaName = '';
+                let pincode = '';
+                
+                if (data.features && data.features.length > 0) {
+                    const props = data.features[0].properties;
+                    areaName = props.city || props.town || props.village || props.name || props.county || '';
+                    pincode = props.postcode || '';
+                    address = props.name || '';
+                    if (props.city) address = props.name + ', ' + props.city;
+                    if (props.state) address += ', ' + props.state;
+                    if (props.country) address += ', ' + props.country;
+                }
+                
+                // Update form fields
+                document.querySelector('input[name="lat"]').value = lat;
+                document.querySelector('input[name="lng"]').value = lng;
+                
+                if (areaName) {
+                    document.querySelector('input[name="area_name"]').value = areaName;
+                }
+                if (pincode) {
+                    document.querySelector('input[name="pincode"]').value = pincode;
+                }
+                if (address) {
+                    document.querySelector('textarea[name="address"]').value = address;
+                }
+                
+                alert(`Location selected!\nLat: ${lat.toFixed(6)}\nLng: ${lng.toFixed(6)}${areaName ? '\nArea: ' + areaName : ''}`);
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('mapPickerModal')).hide();
+                mapPicker = null;
+            })
+            .catch(err => {
+                console.error('Error getting address:', err);
+                alert('Location selected but could not get address. Please enter address manually.');
+                document.querySelector('input[name="lat"]').value = lat;
+                document.querySelector('input[name="lng"]').value = lng;
+                bootstrap.Modal.getInstance(document.getElementById('mapPickerModal')).hide();
+                mapPicker = null;
+            });
+    });
+}
+
+function searchMapLocation() {
+    const searchInput = document.getElementById('mapSearchInput');
+    const searchTerm = searchInput.value;
+    
+    if (!searchTerm) {
+        alert('Please enter a location to search');
+        return;
+    }
+    
+    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(searchTerm + ', India')}&limit=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.features && data.features.length > 0) {
+                const result = data.features[0];
+                const lat = result.geometry.coordinates[1];
+                const lng = result.geometry.coordinates[0];
+                mapPicker.setView([lat, lng], 15);
+                
+                // Update marker
+                if (marker) {
+                    mapPicker.removeLayer(marker);
+                }
+                marker = L.marker([lat, lng]).addTo(mapPicker);
+                
+                // Update form fields
+                document.querySelector('input[name="lat"]').value = lat;
+                document.querySelector('input[name="lng"]').value = lng;
+            } else {
+                alert('Location not found. Please try a different search term.');
+            }
+        })
+        .catch(err => {
+            console.error('Search error:', err);
+            alert('Error searching for location');
+        });
+}
+</script>
+
+
+<!-- Map Picker Modal -->
+<div class="modal fade" id="mapPickerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt"></i> Pick Location from Map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" id="mapSearchInput" class="form-control" placeholder="Search for an area...">
+                        <button class="btn btn-primary" type="button" onclick="searchMapLocation()">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-muted">Click on the map to select your service location</p>
+                <div id="mapPicker" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+  
+{% endblock %} 

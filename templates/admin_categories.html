@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tags"></i> Service Category Management</h2>
+</div>
+
+<div class="row">
+    <!-- Add New Category Form -->
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Category</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Category Name *</label>
+                        <input type="text" class="form-control" name="name" placeholder="e.g., Restaurant" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="Describe what this category includes..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus"></i> Add Category
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card shadow mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Category Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="mb-0">{{ total_count }}</h4>
+                        <small class="text-muted">Total Categories</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="mb-0 text-success">{{ active_count }}</h4>
+                        <small class="text-muted dark:text-white">Active</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Categories List -->
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> All Categories</h5>
+            </div>
+            <div class="card-body">
+                {% if categories %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="categories_header">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Category Name</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for category in categories %}
+                                <tr>
+                                    <td>{{ "%02d" | format((page - 1) * 8 + loop.index) }}</td>
+                                    <td>
+                                        <strong>{{ category.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <small>{{ category.description|default('No description', true) }}</small>
+                                    </td>
+                                    <td>
+                                        {% if category.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('toggle_category', category_id=category._id) }}" 
+                                           class="btn btn-sm {% if category.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                           title="{% if category.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                            <i class="fas {% if category.is_active %}fa-ban{% else %}fa-check{% endif %}"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                           data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                           data-delete-url="{{ url_for('delete_category', category_id=category._id) }}"
+                                           data-item-name="the category '{{ category.name }}'"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if total_pages > 1 %}
+                    <nav aria-label="Categories pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            <!-- Previous -->
+                            <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_categories', page=page-1) }}" tabindex="-1">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            
+                            <!-- Page Numbers -->
+                            {% for p in range(1, total_pages + 1) %}
+                                {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                                <li class="page-item {% if p == page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('admin_categories', page=p) }}">{{ p }}</a>
+                                </li>
+                                {% elif p == page - 2 or p == page + 2 %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Next -->
+                            <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_categories', page=page+1) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">Showing {{ (page - 1) * 8 + 1 }} - {{ [page * 8, total_count]|min }} of {{ total_count }} categories</small>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No categories found. Add your first category!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

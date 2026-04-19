@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AreaAssist - Find Nearby Essential Services</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-mode.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <style>
+        /* Sticky Footer Styles */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        /* Public layout footer */
+        .public-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .public-content-wrapper .container-fluid {
+            flex: 1;
+        }
+        
+        /* Admin layout footer fix */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .content-area {
+            flex: 1;
+        }
+    </style>
+</head>
+ 
+<body>
+    <!-- Fixed Theme Toggle Button -->
+    <div class="fixed-theme-toggle" id="fixedThemeToggle" title="Toggle Theme">
+        <i class="fas fa-moon"></i>
+    </div>
+    
+    {% set is_admin = session.get('user_id') and session.get('role') in ['admin', 'provider', 'customer'] %}
+    {% set hide_navbar = request.endpoint in ['login', 'register'] %}
+    {% set show_public_navbar = not is_admin and not hide_navbar %}
+    
+    {% if is_admin and not hide_navbar %}
+    <!-- Admin/Provider Layout -->
+    <div class="layout-wrapper">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <a href="" class="sidebar-brand-logo">
+                    <img src="{{ url_for('static', filename='favicon.png') }}" alt="AreaAssist" height="35">
+                    <span class="sidebar-brand-text">AreaAssist</span>
+                </a>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            
+            {% if session.get('user_id') %}
+            <div class="px-3 py-2 mb-2">
+                {% if session.get('role') == 'customer' %}
+                    {% set user_area = user.area_name|default('Set your location') if user else 'Set your location' %}
+                    <div class="text-light small">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        {% if user and user.area_name %}
+                            <strong>{{ user.area_name|upper }}</strong>
+                            {% if user.pincode %}({{ user.pincode }}){% endif %}
+                        {% else %}
+                            <a href="{{ url_for('profile') }}" class="text-warning">Set location</a>
+                        {% endif %}
+                    </div>
+                {% elif session.get('role') == 'provider' %}
+                    {% set user_area = user.area_name|default('') if user else '' %}
+                    {% if user_area %}
+                    <div class="text-light small">
+                        <i class="fas fa-store me-1"></i>
+                        <strong>{{ user_area|upper }}</strong>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <nav class="sidebar-nav">
+                {% if session.get('role') == 'admin' %}
+                <div class="nav-section-title">Admin Panel</div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin_users') }}" class="nav-link {% if request.endpoint == 'admin_users' %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span class="nav-text">Users</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin_services') }}" class="nav-link {% if request.endpoint == 'admin_services' %}active{% endif %}">
+                        <i class="fas fa-store"></i>
+                        <span class="nav-text">Services</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin_reports') }}" class="nav-link {% if request.endpoint == 'admin_reports' %}active{% endif %}">
+                        <i class="fas fa-chart-bar"></i>
+                        <span class="nav-text">Reports</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('admin_categories') }}" class="nav-link {% if request.endpoint == 'admin_categories' %}active{% endif %}">
+                        <i class="fas fa-tags"></i>
+                        <span class="nav-text">Categories</span>
+                    </a>
+                </div>
+                {% elif session.get('role') == 'provider' %}
+                <div class="nav-section-title">Provider Panel</div>
+                <div class="nav-item">
+                    <a href="{{ url_for('provider_dashboard') }}" class="nav-link {% if request.endpoint == 'provider_dashboard' %}active{% endif %}">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('register_service') }}" class="nav-link {% if request.endpoint == 'register_service' %}active{% endif %}">
+                        <i class="fas fa-plus-circle"></i>
+                        <span class="nav-text">Add Service</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('services_catalogue') }}" class="nav-link {% if request.endpoint == 'services_catalogue' %}active{% endif %}">
+                        <i class="fas fa-book"></i>
+                        <span class="nav-text">Services Catalogue</span>
+                    </a>
+                </div>
+                {% elif session.get('role') == 'customer' %}
+                <div class="nav-section-title">Customer Panel</div>
+                <div class="nav-item">
+                    <a href="{{ url_for('customer_dashboard') }}" class="nav-link {% if request.endpoint == 'customer_dashboard' %}active{% endif %}">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('search') }}" class="nav-link {% if request.endpoint == 'search' %}active{% endif %}">
+                        <i class="fas fa-search"></i>
+                        <span class="nav-text">Find Services</span>
+                    </a>
+                </div>
+                {% endif %}
+                
+                <div class="nav-section-title">General</div>
+                <div class="nav-item">
+                    <a href="{{ url_for('profile') }}" class="nav-link">
+                        <i class="fas fa-user"></i>
+                        <span class="nav-text">Profile</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="{{ url_for('search') }}" class="nav-link">
+                        <i class="fas fa-search"></i>
+                        <span class="nav-text">Search</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <div class="main-content">
+            <header class="top-header">
+                <div class="header-left">
+                    
+                    <h4 class="header-title">{% if session.get('role') == 'admin' %}Admin Dashboard{% elif session.get('role') == 'provider' %}Provider Dashboard{% elif session.get('role') == 'customer' %}Customer Dashboard{% endif %}</h4>
+                </div>
+                <div class="header-right">
+                    
+                    <div class="dropdown">
+                        <div class="user-profile" data-bs-toggle="dropdown">
+                            <div class="user-avatar pt-1"><h3>{{ session.get('name')[0]|upper }}</h3></div>
+                            <div class="user-info d-none d-md-block">
+                                <span class="user-name">{{ session.get('name') | upper }}</span>
+                                <span class="user-role badge bg-primary text-light rounded-pill">{{ session.get('role') }}</span>
+                            </div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user"></i> Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="content-area">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    <script>function toggleSidebar(){const sidebar=document.getElementById('sidebar');const btn=document.querySelector('.sidebar-toggle i');sidebar.classList.toggle('collapsed');if(sidebar.classList.contains('collapsed')){btn.classList.remove('fa-times');btn.classList.add('fa-bars')}else{btn.classList.remove('fa-bars');btn.classList.add('fa-times')}}</script>
+    
+    {% else %}
+    <!-- Public Layout -->
+    <div class="public-content-wrapper">
+    {% if not hide_navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark public-navbar">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='logo2.png') }}" alt="AreaAssist" height="40">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}"><i class="fas fa-home me-1"></i> Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('search') }}"><i class="fas fa-search me-1"></i> Search Services</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if session.get('user_id') %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-1"></i> Logout</a></li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}"><i class="fas fa-sign-in-alt me-1"></i> Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}"><i class="fas fa-user-plus me-1"></i> Register</a></li>
+                    {% endif %}
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container-fluid px-4 py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block public_content %}{% endblock %}
+    </div>
+
+    {% if not hide_navbar %}
+    <footer class="bg-dark text-white mt-5 py-4">
+        <div class="container text-center">
+            <p>&copy; 2026 AreaAssist - Your Local Service Finder</p>
+        </div>
+    </footer>
+    {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel"><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this item?</p>
+                    <p class="text-muted">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <a href="#" id="deleteConfirmBtn" class="btn btn-danger">Delete</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Delete Modal Handler
+        const deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const deleteUrl = button.getAttribute('data-delete-url');
+                const itemName = button.getAttribute('data-item-name') || 'this item';
+                
+                const modalBody = deleteModal.querySelector('.modal-body p:first-child');
+                modalBody.textContent = 'Are you sure you want to delete ' + itemName + '?';
+                
+                deleteConfirmBtn.href = deleteUrl;
+            });
+        }
+        
+        // Theme Toggle
+        function updateThemeIcon(theme) {
+            const icons = document.querySelectorAll('#themeToggle i, #fixedThemeToggle i');
+            icons.forEach(icon => {
+                icon.classList.toggle('fa-moon', theme === 'light');
+                icon.classList.toggle('fa-sun', theme === 'dark');
+            });
+        }
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+        
+        // Main theme toggle in header
+        const themeToggleBtn = document.getElementById('themeToggle');
+        if (themeToggleBtn) {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+            
+            themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+        
+        // Fixed theme toggle button
+        const fixedThemeToggleBtn = document.getElementById('fixedThemeToggle');
+        if (fixedThemeToggleBtn) {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+            
+            fixedThemeToggleBtn.addEventListener('click', toggleTheme);
+        }
+        
+        // Save/Unsave service function
+        function toggleSaveService(serviceId, btn) {
+            fetch('/api/toggle_save_service', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'service_id=' + serviceId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Toggle button appearance
+                    if (data.saved) {
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-danger');
+                        btn.innerHTML = '<i class="fas fa-heart"></i>';
+                        btn.title = 'Unsave';
+                    } else {
+                        btn.classList.remove('btn-danger');
+                        btn.classList.add('btn-outline-danger');
+                        btn.innerHTML = '<i class="far fa-heart"></i>';
+                        btn.title = 'Save';
+                    }
+                    // Reload page to update saved services section
+                    setTimeout(function() {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert(data.error || 'Failed to save service');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>

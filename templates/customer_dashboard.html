@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="p-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user"></i> Customer Dashboard</h2>
+    <a href="{{ url_for('search') }}" class="btn btn-primary">
+        <i class="fas fa-search"></i> Find Services
+    </a>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-store fa-2x mb-2"></i>
+                <h3>{{ saved_services|length }}</h3>
+                <p class="mb-0">Saved Services</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-star fa-2x mb-2"></i>
+                <h3>{{ reviews_given|length }}</h3>
+                <p class="mb-0">Reviews Given</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                <h3>{{ bookings|length }}</h3>
+                <p class="mb-0">Total Bookings</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                <h3>{{ user.area_name|default('N/A') }}</h3>
+                <p class="mb-0">Your Area</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-8">
+        
+        <!-- Nearby Services (3km Range) -->
+        {% if nearby_services %}
+        <div class="row mb-4">
+            
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-location-arrow"></i> Services Near You (2km)</h5>
+                    </div>
+                    <div class="card-body position-relative">
+                        <!-- Navigation Buttons -->
+                        <button class="btn btn-info position-absolute top-50 start-0 translate-middle-y z-1 ms-2" style="z-index: 10;" onclick="scrollServices('nearbyScroll', -300)">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="btn btn-info position-absolute top-50 end-0 translate-middle-y z-1 me-2" style="z-index: 10;" onclick="scrollServices('nearbyScroll', 300)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        
+                        <!-- Horizontal Scroll Container with Drag -->
+                        <div class="d-flex overflow-auto pb-2 scroll-container" id="nearbyScroll" style="scroll-behavior: smooth; cursor: grab;" 
+                             onmousedown="startDrag(event, 'nearbyScroll')" 
+                             onmouseleave="stopDrag('nearbyScroll')" 
+                             onmouseup="stopDrag('nearbyScroll')" 
+                             onmousemove="doDrag(event, 'nearbyScroll')">
+                            {% for service in nearby_services %}
+                            <div class="flex-fill" style="min-width: 280px; max-width: 280px;">
+                                <div class="card h-100 border border-secondary me-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ service.name |upper }}</h6>
+                                        <p class="text-muted small mb-2"><i>{{ service.category }}</i></p>
+                                        <p class="small mb-2">
+                                            <i class="fas fa-map-marker-alt"></i> {{ service.area_name }}
+                                        </p>
+                                        {% if service.distance is not none and service.distance > 0 %}
+                                        <p class="small text-info mb-2">
+                                            <i class="fas fa-route"></i> {{ '%.1f'|format(service.distance / 1000) }} km away
+                                        </p>
+                                        {% endif %}
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            {% if service.booking_available %}
+                                            <span class="badge bg-secondary"><i class="fas fa-calendar-check"></i> Book Now</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary"><i class="fas fa-phone"></i> Contact</span>
+                                            {% endif %}
+                                            <div>
+                                                <button class="btn btn-sm {% if service._id|string in user_saved_ids %}btn-danger{% else %}btn-outline-danger{% endif %} save-btn" 
+                                                        onclick="toggleSaveService('{{ service._id }}', this)" 
+                                                        title="{% if service._id|string in user_saved_ids %}Unsave{% else %}Save{% endif %}">
+                                                    <i class="{% if service._id|string in user_saved_ids %}fas{% else %}far{% endif %} fa-heart"></i>
+                                                </button>
+                                                <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-sm btn-outline-primary">
+                                                    View
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if nearby_services|length > 3 %}
+                        <div class="text-center mt-3">
+                            {% set lat = user.latitude if user.latitude else '' %}
+                            {% set lng = user.longitude if user.longitude else '' %}
+                            <a href="{{ url_for('search') }}?lat={{ lat }}&lng={{ lng }}&radius=3" class="btn btn-outline-info">
+                                View All Nearby Services ({{ nearby_services|length }})
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+        function scrollServices(containerId, amount) {
+            var container = document.getElementById(containerId);
+            container.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+        
+        // Auto-scroll functionality
+        var autoScrollInterval = null;
+        var autoScrollSpeed = 1;
+        
+        function startAutoScroll(containerId, speed) {
+            var container = document.getElementById(containerId);
+            autoScrollSpeed = speed;
+            autoScrollInterval = setInterval(function() {
+                container.scrollBy({ left: autoScrollSpeed, behavior: 'auto' });
+            }, 20);
+        }
+        
+        function stopAutoScroll() {
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+                autoScrollInterval = null;
+            }
+        }
+        
+        // Drag to scroll functionality
+        var isDragging = true;
+        var startX = 0;
+        var scrollLeft = 0;
+        
+        function startDrag(e, containerId) {
+            stopAutoScroll(); // Stop auto-scroll when user interacts
+            var container = document.getElementById(containerId);
+            isDragging = true;
+            container.style.cursor = 'grabbing';
+            startX = e.pageX - container.offsetLeft;
+            scrollLeft = container.scrollLeft;
+        }
+        
+        function stopDrag(containerId) {
+            var container = document.getElementById(containerId);
+            isDragging = false;
+            container.style.cursor = 'grab';
+            // Resume auto-scroll after drag
+            startAutoScroll(containerId, 1);
+        }
+        
+        function doDrag(e, containerId) {
+            if (!isDragging) return;
+            e.preventDefault();
+            var container = document.getElementById(containerId);
+            var x = e.pageX - container.offsetLeft;
+            var walk = (x - startX) * 2; // Scroll speed multiplier
+            container.scrollLeft = scrollLeft - walk;
+        }
+        
+        // Start auto-scroll on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var container = document.getElementById('nearbyScroll');
+            if (container) {
+                // Start auto-scrolling
+                startAutoScroll('nearbyScroll', 1);
+                
+                // Pause on hover
+                container.addEventListener('mouseenter', stopAutoScroll);
+                container.addEventListener('mouseleave', function() {
+                    startAutoScroll('nearbyScroll', 1);
+                });
+            }
+        });
+        
+        // Save/Unsave service function
+        function toggleSaveService(serviceId, btn) {
+            fetch('/api/toggle_save_service', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'service_id=' + serviceId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Toggle button appearance
+                    if (data.saved) {
+                        btn.classList.remove('btn-outline-danger');
+                        btn.classList.add('btn-danger');
+                        btn.innerHTML = '<i class="fas fa-heart"></i>';
+                        btn.title = 'Unsave';
+                    } else {
+                        btn.classList.remove('btn-danger');
+                        btn.classList.add('btn-outline-danger');
+                        btn.innerHTML = '<i class="far fa-heart"></i>';
+                        btn.title = 'Save';
+                    }
+                    // Reload page to update saved services section
+                    setTimeout(function() {
+                        location.reload();
+                    }, 500);
+                } else {
+                    alert(data.error || 'Failed to save service');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+        </script>
+        {% elif user.area_name %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-location-arrow"></i> Services Near You (2km)</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <p class="text-muted mb-0">No services found within 2km of your area ({{ user.area_name }}).</p>
+                        <a href="{{ url_for('search') }}" class="btn btn-outline-primary mt-3">
+                            <i class="fas fa-search"></i> Search All Services
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-alt"></i> Recent Bookings</h5>
+            </div>
+            <div class="card-body">
+                {% if bookings %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings[:10] %}
+                                <tr>
+                                    <td>{{ booking.service_name }}</td>
+                                    <td>{{ booking.date }}</td>
+                                    <td>{{ booking.time }}</td>
+                                    <td>
+                                        {% if booking.status == 'confirmed' %}
+                                            <span class="badge bg-success">Confirmed</span>
+                                        {% elif booking.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif booking.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Cancelled</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ booking.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('service_detail', service_id=booking.service_id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">No bookings yet. <a href="{{ url_for('search') }}">Find services</a> to make a booking.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-store"></i> Saved Services</h5>
+            </div>
+            <div class="card-body">
+                {% if saved_services %}
+                    {% for service in saved_services[:5] %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ service.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ service.category }}</small>
+                            </div>
+                            <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% if saved_services|length > 5 %}
+                    <div class="text-center mt-2">
+                        <a href="{{ url_for('profile') }}">View all saved services</a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">No saved services. <a href="{{ url_for('search') }}">Find services</a> to save them.</p>
+                {% endif %}
+            </div>
+        </div>
+            </div>
+        </div>
+        
+    </div>
+    <div class="col-4">
+        <!-- Find Services CTA -->
+        <div class="card shadow mb-4">
+            <div class="card-body text-center py-4">
+                <h4><i class="fas fa-search"></i> Looking for a Service?</h4>
+                <p class="text-muted mb-3">Find nearby essential services like plumbers, electricians, tutors, and more.</p>
+                <a href="{{ url_for('search') }}" class="btn btn-lg btn-primary">
+                    <i class="fas fa-search"></i> Find Services
+                </a>
+            </div>
+        </div>
+        <!-- Services with Booking Available -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Services with Online Booking</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if booking_services %}
+                        <div class="row g-3">
+                            {% for service in booking_services[:6] %}
+                            <div class="col-md-12">
+                                <div class="card h-100 border-success">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ service.name }}</h6>
+                                        <p class="text-muted small mb-2">{{ service.category }}</p>
+                                        <p class="small mb-2">{{ service.area_name }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-success"><i class="fas fa-calendar-check"></i> Book Now</span>
+                                            <a href="{{ url_for('service_detail', service_id=service._id) }}" class="btn btn-sm btn-outline-primary">
+                                                View
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if booking_services|length > 6 %}
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('search') }}?booking=1" class="btn btn-outline-success">
+                                View All Bookable Services
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No services available with online booking facility near your location</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-star"></i> Recent Reviews</h5>
+            </div>
+            <div class="card-body">
+                {% if reviews_given %}
+                    {% for review in reviews_given[:5] %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ review.service_name }}</strong>
+                            <span>
+                                {% for i in range(review.rating) %}
+                                <i class="fas fa-star text-warning"></i>
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <small class="text-muted">{{ review.comment }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">No reviews yet. <a href="{{ url_for('search') }}">Find services</a> to give reviews.</p>
+                {% endif %}
+            </div>
+        </div>
+         
+    </div>
+</div>
+
+
+
+
+
+<div class="row">
+    <div class="col-md-6">
+        
+    </div>
+    
+    <div class="col-md-6">
+        
+    </div>
+</div>
+
+
+
+
+
+
+</div>
+{% endblock %}
+

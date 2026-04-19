@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4"><i class="fas fa-chart-bar"></i> Reports & Analytics</h2>
+
+<div class="row g-4 mb-4">
+    <!-- User Statistics Card -->
+    <div class="col-md-4">
+        <div class="card stats-card h-100" >
+            <div class="card-header bg-secondary border-2">
+                <h5 class="mb-0"><i class="fas fa-users"></i> User Statistics</h5>
+            </div>
+            <div class="card-body ">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ user_stats.total }}</h3>
+                        <p class="mb-0 small">Total Users</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ user_stats.admins }}</h3>
+                        <p class="mb-0 small">Admins</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ user_stats.providers }}</h3>
+                        <p class="mb-0 small">Providers</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ user_stats.customers }}</h3>
+                        <p class="mb-0 small">Customers</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small><i class="fas fa-clock me-1"></i> {{ user_stats.new_this_week }} new this week</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Service Statistics Card -->
+    <div class="col-md-4">
+        <div class="card stats-card h-100" >
+            <div class="card-header bg-info border-2">
+                <h5 class="mb-0"><i class="fas fa-store"></i> Service Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ service_stats.total }}</h3>
+                        <p class="mb-0 small">Total Services</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ service_stats.approved }}</h3>
+                        <p class="mb-0 small">Approved</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ service_stats.pending }}</h3>
+                        <p class="mb-0 small">Pending</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ service_stats.rejected }}</h3>
+                        <p class="mb-0 small">Rejected</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small><i class="fas fa-clock me-1"></i> {{ service_stats.new_this_week }} new this week</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Booking Statistics Card -->
+    <div class="col-md-4">
+        <div class="card stats-card h-100" >
+            <div class="card-header bg-warning border-2">
+                <h5 class="mb-0"><i class="fas fa-calendar-check"></i> Booking Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ booking_stats.total }}</h3>
+                        <p class="mb-0 small">Total Bookings</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ booking_stats.completed }}</h3>
+                        <p class="mb-0 small">Completed</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ booking_stats.confirmed }}</h3>
+                        <p class="mb-0 small">Confirmed</p>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="fw-bold">{{ booking_stats.pending }}</h3>
+                        <p class="mb-0 small">Pending</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <small><i class="fas fa-clock me-1"></i> {{ booking_stats.this_month }} this month</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Services by Category</h5>
+            </div>
+            <div class="card-body">
+                {% if category_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Category</th>
+                                    <th class="text-end">Count</th>
+                                    <th class="text-end">%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cat in category_stats %}
+                                <tr>
+                                    <td>{{ cat._id }}</td>
+                                    <td class="text-end">{{ cat.count }}</td>
+                                    <td class="text-end">{{ '%.1f'|format(cat.count / service_stats.total * 100) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">No category data available.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-trophy"></i> Top Providers</h5>
+            </div>
+            <div class="card-body">
+                {% if top_providers %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Provider Name</th>
+                                    <th>Email</th>
+                                    <th class="text-end">Services</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for provider in top_providers %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ provider.name }}</td>
+                                    <td><small>{{ provider.email }}</small></td>
+                                    <td class="text-end"><span class="badge bg-primary">{{ provider.service_count }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">No provider data available.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
